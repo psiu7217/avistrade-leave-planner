@@ -27,6 +27,9 @@ import {
 } from "../domain/validatePreference";
 import { CorporateRule, Employee, Horizon, Preference } from "../domain/types";
 import { useDialogFocus } from "../components/useDialogFocus";
+import { HRControlPanel } from "../components/HRControlPanel";
+import { HRTab } from "../domain/types";
+import { describeCoverageRisk, getCoverageRisks } from "../domain/hrInsights";
 import {
   ShieldCheck,
   CheckCircle2,
@@ -43,6 +46,7 @@ import {
   ChevronLeft,
   ChevronRight,
   User,
+  UserCheck,
   Filter,
   Download,
 } from "lucide-react";
@@ -51,8 +55,8 @@ export function HRPage({
   activeTab,
   setActiveTab,
 }: {
-  activeTab: "calendar" | "queue" | "rules" | "audit";
-  setActiveTab: (tab: "calendar" | "queue" | "rules" | "audit") => void;
+  activeTab: HRTab;
+  setActiveTab: (tab: HRTab) => void;
 }) {
   const {
     state,
@@ -119,6 +123,14 @@ export function HRPage({
   );
 
   const horizonMonths = useMemo(() => getMonthsForHorizon(horizon), [horizon]);
+  // Review checks the whole request, independently of the visible calendar horizon.
+  const coverageRisks = useMemo(
+    () => getCoverageRisks(state, calendarYear, "ALL"),
+    [state, calendarYear],
+  );
+  const reviewCoverageRisks = reviewPreference
+    ? coverageRisks.filter((r) => r.requestIds.includes(reviewPreference.id))
+    : [];
 
   // Filtered employees for calendar
   const filteredEmployees = useMemo(() => {
@@ -557,8 +569,8 @@ export function HRPage({
       </div>
 
       {/* Navigation Sub-Tabs */}
-      <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-wrap gap-3 items-center justify-between border-b border-slate-200 pb-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setActiveTab("calendar")}
             className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-2 ${
@@ -591,6 +603,13 @@ export function HRPage({
           >
             <Sliders className="w-4 h-4" />
             <span>Корпоративные правила</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("control")}
+            className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-2 ${activeTab === "control" ? "bg-[#007A60] text-white shadow-xs" : "text-slate-600 hover:bg-slate-100"}`}
+          >
+            <UserCheck className="w-4 h-4" />
+            <span>Контроль плана</span>
           </button>
           <button
             onClick={() => setActiveTab("audit")}
@@ -656,6 +675,14 @@ export function HRPage({
       )}
 
       {/* TAB 1: TEAM CALENDAR */}
+      {activeTab === "control" && (
+        <HRControlPanel
+          onOpenPreference={(id) => {
+            const p = state.preferences.find((p) => p.id === id);
+            if (p) setReviewPreference(p);
+          }}
+        />
+      )}
       {activeTab === "calendar" && (
         <div className="bg-white rounded-xl p-5 border border-[#D7DFDC] shadow-xs space-y-4">
           {/* Controls bar */}
@@ -1238,6 +1265,28 @@ export function HRPage({
             </div>
 
             {/* Validation Findings for HR (names and exact days revealed!) */}
+            {reviewCoverageRisks.length > 0 && (
+              <section
+                aria-label="Нагрузка на замещающего"
+                className="rounded-lg border border-amber-400 bg-amber-50 p-4 space-y-2"
+              >
+                <h4 className="text-sm font-bold text-amber-950">
+                  Проверьте замещение перед решением
+                </h4>
+                {reviewCoverageRisks.map((r) => (
+                  <p
+                    className="text-sm leading-relaxed text-amber-950"
+                    key={r.id}
+                  >
+                    {describeCoverageRisk(r, state)}
+                  </p>
+                ))}
+                <p className="text-xs text-amber-900">
+                  Это сигнал нагрузки, а не новый запрет. Уточните объём работ и
+                  согласие замещающего; ожидающие пожелания ещё не согласованы.
+                </p>
+              </section>
+            )}
             <div className="space-y-2">
               <h4 className="text-xs font-bold text-slate-700">
                 Результаты проверки по регламенту и ТК РБ:
