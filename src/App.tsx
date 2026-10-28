@@ -4,15 +4,14 @@ import { Header } from "./components/Header";
 import { EmployeePage } from "./pages/EmployeePage";
 import { HRPage } from "./pages/HRPage";
 import { AlertCircle, CheckCircle2, Info } from "lucide-react";
+import { HRTab } from "./domain/types";
 
 function AppContent() {
   const { currentRole, currentUser, resetVersion, notification } = useApp();
-  const [activeHRTab, setActiveHRTab] = useState<
-    "calendar" | "queue" | "rules" | "audit"
-  >("calendar");
+  const [activeHRTab, setActiveHRTab] = useState<HRTab>("calendar");
   return (
     <div className="min-h-screen flex flex-col bg-[#F6F8F7] text-[#34495E]">
-      <Header activeHRTab={activeHRTab} setActiveHRTab={setActiveHRTab} />
+      <Header />
       {notification && (
         <div
           role="status"

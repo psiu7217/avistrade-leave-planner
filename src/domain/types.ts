@@ -3,6 +3,7 @@
  */
 
 export type Role = "employee" | "hr";
+export type HRTab = "calendar" | "queue" | "control" | "rules" | "audit";
 
 export type PositionCode =
   "MPP" | "SECTION_MGR" | "NO" | "RO" | "ZAV" | "ZTV" | "ID" | "HR" | "OTHER";

@@ -3,10 +3,7 @@ import { useApp } from "../store/AppContext";
 import { CalendarDays, RotateCcw } from "lucide-react";
 import { useDialogFocus } from "./useDialogFocus";
 
-export function Header(_: {
-  activeHRTab: string;
-  setActiveHRTab: (tab: "calendar" | "queue" | "rules" | "audit") => void;
-}) {
+export function Header() {
   const {
     currentUser,
     currentRole,
