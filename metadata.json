@@ -1,0 +1,7 @@
+{
+  "name": "LeaveFlow — График отпусков «Авистрейд»",
+  "description": "Прототип системы планирования и согласования отпусков сотрудников ООО «Авистрейд» с проверкой корпоративных и правовых норм.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
