@@ -39,6 +39,7 @@ import {
   ValidationResult,
 } from "../domain/types";
 import { useDialogFocus } from "../components/useDialogFocus";
+import { getEmployeeBalances } from "../domain/leaveBalances";
 
 const labels: Record<PreferenceStatus, string> = {
   draft: "Черновик",
@@ -49,6 +50,8 @@ const labels: Record<PreferenceStatus, string> = {
   withdrawn: "Отозвано",
 };
 function privateMessage(result: ValidationResult): string {
+  if (result.code === "UNPAID_HR_BASIS")
+    return "HR проверит основание и продолжительность. Для сессии может потребоваться справка-вызов и проверка права на оплату. Трудовой остаток не расходуется.";
   if (/^CORP-0[2-5]/.test(result.code))
     return "На эти даты действует ограничение совместного отсутствия по вашей должности. HR рассмотрит возможность исключения.";
   if (result.code === "CORP-08")
@@ -72,6 +75,10 @@ export function EmployeePage() {
   const [endDate, setEnd] = useState("");
   const [replacementId, setReplacement] = useState("");
   const [comment, setComment] = useState("");
+  const [leaveType, setLeaveType] = useState<"labor" | "unpaid">("labor");
+  const [unpaidReason, setUnpaidReason] = useState<"personal" | "study">(
+    "personal",
+  );
   const [editingId, setEditingId] = useState<string | undefined>();
   const [selectingEnd, setSelectingEnd] = useState(false);
   const [acknowledged, setAcknowledged] = useState(false);
@@ -86,6 +93,8 @@ export function EmployeePage() {
     state.demoDate,
   );
   const candidate = {
+    leaveType,
+    unpaidReason,
     id: editingId,
     employeeId: currentUser.id,
     startDate,
@@ -103,7 +112,7 @@ export function EmployeePage() {
   const fingerprint = validationFingerprint(validation, state);
   useEffect(
     () => setAcknowledged(false),
-    [fingerprint, replacementId, startDate, endDate],
+    [fingerprint, replacementId, startDate, endDate, leaveType, unpaidReason],
   );
   const selected = new Set(getDateRangeArray(startDate, endDate));
   const ownPrefs = state.preferences.filter(
@@ -116,17 +125,18 @@ export function EmployeePage() {
     getConfirmedLeaves(state)
       .filter((a) => a.employeeId === currentUser.id && a.type === "labor")
       .flatMap((a) => getDateRangeArray(a.startDate, a.endDate))
+      .filter((d) => d.startsWith(`${calendarYear}-`))
       .filter((d) => !isOfficialHoliday(d)),
   );
   const summerUsed = [...confirmedDates].filter(isSummerDate).length;
-  const entitlement = state.workYears.find(
-    (w) => w.employeeId === currentUser.id,
-  )?.entitlementDays;
+  const balances = getEmployeeBalances(state, currentUser.id, calendarYear);
+  const balanceKnown = balances.length > 0 && balances.every((b) => b.complete);
+  const remaining = balances.reduce((sum, b) => sum + (b.remaining ?? 0), 0);
   const items = [
     ...ownPrefs.map((p) => ({
       ...p,
       pref: p,
-      type: "labor",
+      type: p.leaveType ?? "labor",
       past:
         ["rejected", "withdrawn"].includes(p.status) ||
         (p.status === "approved" && p.endDate < state.demoDate),
@@ -153,6 +163,8 @@ export function EmployeePage() {
     setEnd("");
     setReplacement("");
     setComment("");
+    setLeaveType("labor");
+    setUnpaidReason("personal");
     setEditingId(undefined);
     setSelectingEnd(false);
     setAcknowledged(false);
@@ -163,6 +175,8 @@ export function EmployeePage() {
     setFormOpen(true);
   };
   const edit = (p: Preference) => {
+    setLeaveType(p.leaveType ?? "labor");
+    setUnpaidReason(p.unpaidReason ?? "personal");
     setStart(p.startDate);
     setEnd(p.endDate);
     setReplacement(p.replacementEmployeeId);
@@ -198,6 +212,8 @@ export function EmployeePage() {
   const save = (draft: boolean) => {
     try {
       const payload = {
+        leaveType,
+        unpaidReason,
         id: editingId,
         employeeId: currentUser.id,
         startDate,
@@ -247,9 +263,10 @@ export function EmployeePage() {
       </section>
       <section className="personal-summary" aria-label="Ваш план на год">
         <div>
-          <span>Согласовано на год</span>
+          <span>Осталось запланировать</span>
           <strong>
-            {confirmedDates.size} <small>дн.</small>
+            {balanceKnown ? remaining : "Уточнить у HR"}{" "}
+            {balanceKnown && <small>дн.</small>}
           </strong>
         </div>
         <div>
@@ -267,12 +284,36 @@ export function EmployeePage() {
           </strong>
         </div>
         <p>
-          Это предварительный план.{" "}
-          {entitlement !== undefined
-            ? `Демо-право на отпуск: ${entitlement} дн.`
-            : "Право на отпуск требует проверки."}{" "}
-          Отпуск оформляется отдельно.
+          Остаток по праву за рабочий год за вычетом использованных и
+          согласованных дней. Ожидающие пожелания его не уменьшают. Это плановый
+          остаток, а не начисленные дни для компенсации. Данные
+          демонстрационные.
         </p>
+      </section>
+      <section
+        className="balance-details"
+        aria-label="Остатки трудового отпуска"
+      >
+        {balances.map((b) => (
+          <details key={b.workYear.id}>
+            <summary>
+              Как посчитан остаток · Рабочий год:{" "}
+              {formatDateRangeRu(b.workYear.startDate, b.workYear.endDate)}
+            </summary>
+            <p>
+              Право: {b.workYear.entitlementDays} дн. · Использовано: {b.used} ·
+              Уже в плане: {b.planned} · Ждут решения: {b.pending}
+            </p>
+            <p>
+              {b.complete
+                ? `Ещё не использовано: ${b.unused} дн.; свободно для планирования: ${b.remaining} дн.${b.overplanned ? ` Превышение плана: ${b.overplanned} дн.` : ""}`
+                : "История неполна — остаток должен подтвердить HR."}
+            </p>
+          </details>
+        ))}
+        {!balances.length && (
+          <p>Нет данных рабочего года. Остаток уточните у HR.</p>
+        )}
       </section>
       <div className={formOpen ? "employee-grid with-form" : "employee-grid"}>
         <section className="calendar-panel" aria-label="Календарь отпусков">
@@ -446,6 +487,41 @@ export function EmployeePage() {
                 save(false);
               }}
             >
+              <label>
+                Вид отпуска
+                <select
+                  value={leaveType}
+                  onChange={(e) =>
+                    setLeaveType(e.target.value as "labor" | "unpaid")
+                  }
+                >
+                  <option value="labor">Трудовой (оплачиваемый)</option>
+                  <option value="unpaid">Без сохранения зарплаты</option>
+                </select>
+              </label>
+              {leaveType === "unpaid" && (
+                <>
+                  <label>
+                    Причина запроса
+                    <select
+                      value={unpaidReason}
+                      onChange={(e) =>
+                        setUnpaidReason(e.target.value as "personal" | "study")
+                      }
+                    >
+                      <option value="personal">
+                        Личные / семейные обстоятельства
+                      </option>
+                      <option value="study">Учёба / сессия</option>
+                    </select>
+                  </label>
+                  <p className="muted">
+                    Трудовой остаток не расходуется. HR проверит основание и
+                    срок. Для сессии HR также проверит учебные гарантии и
+                    положена ли оплата.
+                  </p>
+                </>
+              )}
               <div className="date-inputs">
                 <label>
                   Первый день
@@ -494,8 +570,11 @@ export function EmployeePage() {
                 </select>
               </label>
               <label>
-                Комментарий <span className="muted">· необязательно</span>
+                {leaveType === "unpaid"
+                  ? "Основание запроса · обязательно"
+                  : "Комментарий · необязательно"}
                 <textarea
+                  required={leaveType === "unpaid"}
                   rows={2}
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
@@ -504,17 +583,23 @@ export function EmployeePage() {
               </label>
               {startDate && endDate && validation.absenceDays > 0 && (
                 <div className="form-day-count">
-                  <strong>{validation.leaveDays} дн. отпуска</strong>
+                  <strong>
+                    {leaveType === "unpaid"
+                      ? `${validation.absenceDays} календ. дн. без сохранения зарплаты`
+                      : `${validation.leaveDays} дн. отпуска`}
+                  </strong>
                   <span>
                     {validation.absenceDays} календарных дней отсутствия
                     {validation.holidayDates.length > 0
                       ? ` · ${validation.holidayDates.length} праздничных дней не расходуют отпуск`
                       : ""}
                   </span>
-                  <span>
-                    Летний расход с этим периодом: {validation.summerDays} из{" "}
-                    {validation.summerLimit} дн.
-                  </span>
+                  {leaveType === "labor" && (
+                    <span>
+                      Летний расход с этим периодом: {validation.summerDays} из{" "}
+                      {validation.summerLimit} дн.
+                    </span>
+                  )}
                   {!!validation.pendingSummerDays && (
                     <span>
                       Другие ожидающие пожелания летом:{" "}
@@ -629,7 +714,7 @@ export function EmployeePage() {
                   <p>
                     {item.type === "labor"
                       ? `${calc.leaveDays} дн. отпуска`
-                      : `${calc.absenceDays} дн. отсутствия`}
+                      : `${calc.absenceDays} календ. дн. · ${item.type === "unpaid" ? "Без сохранения зарплаты" : "Другое отсутствие"}`}
                     {calc.absenceDays !== calc.leaveDays &&
                     item.type === "labor"
                       ? ` · ${calc.absenceDays} календарных дней`

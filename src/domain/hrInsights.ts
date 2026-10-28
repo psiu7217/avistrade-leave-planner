@@ -46,6 +46,7 @@ export function getPlanningRoster(
       const prefs = state.preferences.filter(
         (p) =>
           p.employeeId === employee.id &&
+          p.leaveType !== "unpaid" &&
           ["submitted", "returned", "approved"].includes(p.status) &&
           intersects(p),
       );

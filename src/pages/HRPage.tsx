@@ -3,7 +3,7 @@
  * Conforms to Sections 4.2, 5, 6, 8, 9, 10.4 of the Technical Specification.
  */
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useApp } from "../store/AppContext";
 import {
   areIntervalsOverlapping,
@@ -28,6 +28,7 @@ import {
 import { CorporateRule, Employee, Horizon, Preference } from "../domain/types";
 import { useDialogFocus } from "../components/useDialogFocus";
 import { HRControlPanel } from "../components/HRControlPanel";
+import { HRBalancesPanel } from "../components/HRBalancesPanel";
 import { HRTab } from "../domain/types";
 import { describeCoverageRisk, getCoverageRisks } from "../domain/hrInsights";
 import {
@@ -81,6 +82,11 @@ export function HRPage({
     null,
   );
   const [exceptionReason, setExceptionReason] = useState<string>("");
+  const [unpaidBasis, setUnpaidBasis] = useState("");
+  useEffect(
+    () => setUnpaidBasis(reviewPreference?.unpaidApprovalBasis ?? ""),
+    [reviewPreference?.id],
+  );
   const [returnReason, setReturnReason] = useState<string>("");
   const [rejectionReason, setRejectionReason] = useState<string>("");
   const [actionModalType, setActionModalType] = useState<
@@ -105,6 +111,12 @@ export function HRPage({
   const [createComment, setCreateComment] = useState<string>(
     "Создано специалистом HR",
   );
+  const [createLeaveType, setCreateLeaveType] = useState<"labor" | "unpaid">(
+    "labor",
+  );
+  const [createUnpaidReason, setCreateUnpaidReason] = useState<
+    "personal" | "study"
+  >("personal");
   useDialogFocus(
     actionModalType ||
       (reviewPreference
@@ -254,7 +266,7 @@ export function HRPage({
     try {
       dispatch({
         type: "APPROVE_PREFERENCE",
-        payload: { preferenceId: pref.id },
+        payload: { preferenceId: pref.id, unpaidApprovalBasis: unpaidBasis },
         actorId: currentUser.id,
         actorName: currentUser.name,
       });
@@ -285,6 +297,7 @@ export function HRPage({
         payload: {
           preferenceId: reviewPreference.id,
           reason: exceptionReason.trim(),
+          unpaidApprovalBasis: unpaidBasis,
         },
         actorId: currentUser.id,
         actorName: currentUser.name,
@@ -396,6 +409,8 @@ export function HRPage({
     e.preventDefault();
     try {
       const candidate = {
+        leaveType: createLeaveType,
+        unpaidReason: createUnpaidReason,
         employeeId: createEmployeeId,
         startDate: createStartDate,
         endDate: createEndDate,
@@ -407,6 +422,8 @@ export function HRPage({
       dispatch({
         type: "SUBMIT_PREFERENCE",
         payload: {
+          leaveType: createLeaveType,
+          unpaidReason: createUnpaidReason,
           employeeId: createEmployeeId,
           startDate: createStartDate,
           endDate: createEndDate,
@@ -459,7 +476,7 @@ export function HRPage({
           p.endDate,
           String(days),
           "Согласовано в плане",
-          p.isException ? "Корпоративное исключение" : "Стандартный отпуск",
+          `${p.leaveType === "unpaid" ? "Без сохранения зарплаты" : "Трудовой отпуск"}${p.isException ? " · Корпоративное исключение" : ""}`,
         ]);
       });
 
@@ -612,6 +629,12 @@ export function HRPage({
             <span>Контроль плана</span>
           </button>
           <button
+            onClick={() => setActiveTab("balances")}
+            className={`px-4 py-2 text-xs font-bold rounded-lg ${activeTab === "balances" ? "bg-[#007A60] text-white" : "text-slate-600 hover:bg-slate-100"}`}
+          >
+            Остатки и сроки
+          </button>
+          <button
             onClick={() => setActiveTab("audit")}
             className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-2 ${
               activeTab === "audit"
@@ -675,6 +698,7 @@ export function HRPage({
       )}
 
       {/* TAB 1: TEAM CALENDAR */}
+      {activeTab === "balances" && <HRBalancesPanel />}
       {activeTab === "control" && (
         <HRControlPanel
           onOpenPreference={(id) => {
@@ -822,14 +846,20 @@ export function HRPage({
                           cellClass =
                             "bg-[#007A60] hover:bg-[#00634E] text-white";
                           cellContent = (
-                            <span className="text-[9px] font-bold">О</span>
+                            <span className="text-[9px] font-bold">
+                              {confirmedLeave.type === "unpaid" ? "Б" : "О"}
+                            </span>
                           );
                         } else if (preference) {
                           if (preference.status === "approved") {
                             cellClass = preference.isException
                               ? "bg-[#34495E] ring-2 ring-amber-400 text-white font-bold"
                               : "bg-[#007A60] text-white font-bold";
-                            cellContent = <span className="text-[9px]">О</span>;
+                            cellContent = (
+                              <span className="text-[9px]">
+                                {preference.leaveType === "unpaid" ? "Б" : "О"}
+                              </span>
+                            );
                             cellClick = () => setReviewPreference(preference);
                           } else if (preference.status === "submitted") {
                             cellClass =
@@ -1010,8 +1040,9 @@ export function HRPage({
                               )}
                             </div>
                             <div className="text-[11px] text-slate-500 tabular-nums">
-                              {validation.absenceDays} календ. дн. (
-                              {validation.leaveDays} дн. трудового)
+                              {preference.leaveType === "unpaid"
+                                ? `${validation.absenceDays} календ. дн. · Без сохранения зарплаты`
+                                : `${validation.absenceDays} календ. дн. (${validation.leaveDays} дн. трудового)`}
                             </div>
                           </td>
                           <td className="py-3 px-3 max-w-sm">
@@ -1230,10 +1261,15 @@ export function HRPage({
               </div>
               <div>
                 <span className="text-slate-500 block text-[10px]">
-                  Трудовой отпуск
+                  {reviewPreference.leaveType === "unpaid"
+                    ? "Без сохранения зарплаты"
+                    : "Трудовой отпуск"}
                 </span>
                 <span className="font-bold text-[#007A60] tabular-nums">
-                  {reviewValidation.leaveDays} дн.
+                  {reviewPreference.leaveType === "unpaid"
+                    ? reviewValidation.absenceDays
+                    : reviewValidation.leaveDays}{" "}
+                  дн.
                 </span>
               </div>
               <div>
@@ -1241,8 +1277,9 @@ export function HRPage({
                   Летний расход
                 </span>
                 <span className="font-bold text-slate-900 tabular-nums">
-                  {reviewValidation.summerDays} из{" "}
-                  {reviewValidation.summerLimit} дн.
+                  {reviewPreference.leaveType === "unpaid"
+                    ? "Не расходуется"
+                    : `${reviewValidation.summerDays} из ${reviewValidation.summerLimit} дн.`}
                 </span>
               </div>
               <div>
@@ -1264,6 +1301,32 @@ export function HRPage({
               </div>
             </div>
 
+            {reviewPreference.leaveType === "unpaid" && (
+              <section className="balance-note">
+                <p>
+                  <strong>Причина:</strong>{" "}
+                  {reviewPreference.unpaidReason === "study"
+                    ? "Учёба / сессия"
+                    : "Личные / семейные обстоятельства"}
+                </p>
+                <p>{reviewPreference.comment}</p>
+                <label>
+                  Проверенное основание неоплачиваемого отпуска
+                  <textarea
+                    value={unpaidBasis}
+                    readOnly={reviewPreference.status !== "submitted"}
+                    onChange={(e) => setUnpaidBasis(e.target.value)}
+                    placeholder="Проверенные документы, применимые гарантии, срок и основание без сохранения зарплаты"
+                    rows={3}
+                  />
+                </label>
+                <p>
+                  Для согласования укажите не менее 10 символов. Для учёбы
+                  проверьте, не положена ли оплата. Решение здесь относится к
+                  плану; кадровое оформление выполняется отдельно.
+                </p>
+              </section>
+            )}
             {/* Validation Findings for HR (names and exact days revealed!) */}
             {reviewCoverageRisks.length > 0 && (
               <section
@@ -1390,6 +1453,10 @@ export function HRPage({
                 {reviewValidation.canApproveAsException && (
                   <button
                     type="button"
+                    disabled={
+                      reviewPreference.leaveType === "unpaid" &&
+                      unpaidBasis.trim().length < 10
+                    }
                     onClick={() => {
                       setActionModalType("exception");
                       setExceptionReason("");
@@ -1404,6 +1471,10 @@ export function HRPage({
                 {reviewValidation.canApproveNormally && (
                   <button
                     type="button"
+                    disabled={
+                      reviewPreference.leaveType === "unpaid" &&
+                      unpaidBasis.trim().length < 10
+                    }
                     onClick={() => handleApproveNormally(reviewPreference)}
                     className="px-4 py-2 text-xs font-semibold text-white bg-[#007A60] hover:bg-[#00634E] rounded-lg transition-colors shadow-xs"
                   >
@@ -1658,12 +1729,45 @@ export function HRPage({
             role="dialog"
             aria-modal="true"
             aria-label="Действие HR"
-            className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4"
+            className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto"
           >
             <h3 className="text-base font-bold text-[#34495E]">
-              Подать пожелание от имени сотрудника (P1)
+              Подать пожелание от имени сотрудника
             </h3>
             <form onSubmit={handleCreateOnBehalf} className="space-y-3">
+              <label className="block text-xs font-semibold text-slate-700">
+                Вид отпуска
+                <select
+                  className="w-full border rounded-lg p-2"
+                  value={createLeaveType}
+                  onChange={(e) => {
+                    setCreateLeaveType(e.target.value as "labor" | "unpaid");
+                    if (e.target.value === "unpaid") setCreateComment("");
+                  }}
+                >
+                  <option value="labor">Трудовой (оплачиваемый)</option>
+                  <option value="unpaid">Без сохранения зарплаты</option>
+                </select>
+              </label>
+              {createLeaveType === "unpaid" && (
+                <label className="block text-xs font-semibold text-slate-700">
+                  Причина запроса
+                  <select
+                    className="w-full border rounded-lg p-2"
+                    value={createUnpaidReason}
+                    onChange={(e) =>
+                      setCreateUnpaidReason(
+                        e.target.value as "personal" | "study",
+                      )
+                    }
+                  >
+                    <option value="personal">
+                      Личные / семейные обстоятельства
+                    </option>
+                    <option value="study">Учёба / сессия</option>
+                  </select>
+                </label>
+              )}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Сотрудник
@@ -1729,11 +1833,14 @@ export function HRPage({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Комментарий
+                  {createLeaveType === "unpaid"
+                    ? "Основание запроса · обязательно"
+                    : "Комментарий"}
                 </label>
                 <input
                   type="text"
                   value={createComment}
+                  required={createLeaveType === "unpaid"}
                   onChange={(e) => setCreateComment(e.target.value)}
                   className="w-full text-xs text-slate-800 bg-white border border-slate-300 rounded-lg p-2"
                 />

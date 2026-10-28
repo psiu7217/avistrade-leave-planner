@@ -59,7 +59,7 @@ export function getConfirmedLeaves(
         employeeId: pref.employeeId,
         startDate: pref.startDate,
         endDate: pref.endDate,
-        type: "labor",
+        type: pref.leaveType ?? "labor",
       });
     }
   }
@@ -259,6 +259,7 @@ export function checkSummerMaxDays(
   for (const pref of state.preferences) {
     if (
       pref.employeeId === candidateEmployeeId &&
+      pref.leaveType !== "unpaid" &&
       pref.status === "submitted" &&
       pref.startDate.slice(0, 4) === startDate.slice(0, 4) &&
       pref.id !== excludeId

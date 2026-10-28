@@ -11,7 +11,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "lint": "tsc --noEmit",
-    "test": "tsx test/rules.test.ts && tsx --test test/regression.test.ts test/hrInsights.test.ts"
+    "test": "tsx test/rules.test.ts && tsx --test test/regression.test.ts test/hrInsights.test.ts test/balancesUnpaid.test.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
