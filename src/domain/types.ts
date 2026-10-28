@@ -162,6 +162,7 @@ export interface HolidayCalendar {
 }
 
 export interface AppState {
+  demoDataVersion?: string;
   schemaVersion: string;
   employees: Employee[];
   departments: Department[];

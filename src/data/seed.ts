@@ -4,6 +4,8 @@
  */
 
 import { AppState, Employee, Department, IncompatibilityPair, WorkYear, CorporateRule, ExistingAbsence, Preference } from '../domain/types';
+import { buildShowcaseState } from './showcase';
+export const DEMO_DATA_VERSION = 'showcase-2026-10-28-v1';
 
 export const INITIAL_DEMO_DATE = '2026-10-28';
 export const INITIAL_PLAN_YEAR = 2027;
@@ -479,7 +481,8 @@ export const SEED_PREFERENCES: Preference[] = [
   },
 ];
 
-export const INITIAL_STATE: AppState = {
+/** Small, stable fixture for isolated rule tests; not the presentation dataset. */
+export const BASE_DEMO_STATE: AppState = {
   schemaVersion: '2.0.0',
   employees: SEED_EMPLOYEES,
   departments: SEED_DEPARTMENTS,
@@ -503,3 +506,5 @@ export const INITIAL_STATE: AppState = {
   demoDate: INITIAL_DEMO_DATE,
   currentYear: INITIAL_PLAN_YEAR,
 };
+
+export const INITIAL_STATE: AppState = buildShowcaseState(BASE_DEMO_STATE, DEMO_DATA_VERSION);

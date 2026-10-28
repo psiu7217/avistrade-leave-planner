@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useApp } from "../store/AppContext";
 import { CalendarDays, RotateCcw } from "lucide-react";
 import { useDialogFocus } from "./useDialogFocus";
+import { DEMO_DATA_VERSION } from "../data/seed";
 
 export function Header() {
   const {
@@ -68,6 +69,11 @@ export function Header() {
               <p>
                 Переключатель показывает разные кабинеты. Это не авторизация.
               </p>
+              <p>
+                Полный набор содержит сроки контрактов, три вида рисков
+                замещения, неоплачиваемые отпуска, возврат, историю и
+                согласованное исключение.
+              </p>
               <button
                 onClick={() => setConfirm(true)}
                 className="secondary-button"
@@ -82,6 +88,21 @@ export function Header() {
           браузере
         </div>
       </header>
+      {state.demoDataVersion !== DEMO_DATA_VERSION && !storageWarning && (
+        <div className="demo-data-update" role="status">
+          <div>
+            <strong>Доступен полный набор для демонстрации</strong>
+            <p>
+              В сохранённых данных могут отсутствовать новые примеры. Загрузите
+              набор со сроками контрактов, замещениями, историей и
+              неоплачиваемыми отпусками.
+            </p>
+          </div>
+          <button className="primary-button" onClick={() => setConfirm(true)}>
+            Загрузить полный демо-набор
+          </button>
+        </div>
+      )}
       {storageWarning && (
         <div className="storage-warning" role="alert">
           <span>
@@ -103,8 +124,10 @@ export function Header() {
           >
             <h2 id="reset-title">Сбросить демо-данные?</h2>
             <p>
-              Созданные пожелания и изменения правил будут заменены исходным
-              набором. Другие данные браузера останутся.
+              Созданные пожелания и изменения правил будут заменены полным
+              набором сценариев: сроки контрактов, замещение нескольких
+              сотрудников, история, исключение и неоплачиваемые отпуска. Другие
+              данные браузера останутся.
             </p>
             <div className="dialog-actions">
               <button

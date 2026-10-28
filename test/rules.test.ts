@@ -7,7 +7,7 @@ import { areIntervalsOverlapping, calculateLeaveDays, getDateRangeArray } from '
 import { checkSalesConcurrentLimit, checkSummerMaxDays } from '../src/domain/corporateRules';
 import { checkLegalHolidayRules, checkWorkYearParts, mergeIntoContinuousParts } from '../src/domain/legalChecks';
 import { validatePreference } from '../src/domain/validatePreference';
-import { INITIAL_STATE } from '../src/data/seed';
+import { BASE_DEMO_STATE as INITIAL_STATE } from '../src/data/seed';
 import { appReducer } from '../src/domain/workflow';
 
 function assert(condition: boolean, message: string) {

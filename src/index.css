@@ -277,6 +277,30 @@ button:disabled {
   max-width: 310px;
   text-align: left;
 }
+.demo-data-update {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 16px 24px 0;
+  padding: 16px 20px;
+  border: 1px solid #007a60;
+  border-radius: 10px;
+  background: #e8f6f0;
+  color: #244d40;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.demo-data-update div {
+  flex: 1 1 420px;
+}
+.demo-data-update strong {
+  font-size: 16px;
+}
+.demo-data-update p {
+  margin-top: 6px;
+}
 .balance-details,
 .balance-note,
 .balance-workyear {
