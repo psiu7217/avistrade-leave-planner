@@ -10,7 +10,7 @@ import {
   ExistingAbsence,
   Preference,
   ValidationResult,
-} from './types';
+} from "./types";
 import {
   addCalendarMonths,
   areIntervalsOverlapping,
@@ -19,8 +19,8 @@ import {
   getDateRangeArray,
   isSummerDate,
   parseYMD,
-} from './dates';
-import { isOfficialHoliday } from '../data/holidays';
+} from "./dates";
+import { isOfficialHoliday } from "../data/holidays";
 
 export interface ConfirmedLeaveInterval {
   id: string;
@@ -36,7 +36,7 @@ export interface ConfirmedLeaveInterval {
  */
 export function getConfirmedLeaves(
   state: AppState,
-  excludeId?: string
+  excludeId?: string,
 ): ConfirmedLeaveInterval[] {
   const result: ConfirmedLeaveInterval[] = [];
 
@@ -53,13 +53,13 @@ export function getConfirmedLeaves(
   }
 
   for (const pref of state.preferences) {
-    if (pref.status === 'approved' && pref.id !== excludeId) {
+    if (pref.status === "approved" && pref.id !== excludeId) {
       result.push({
         id: pref.id,
         employeeId: pref.employeeId,
         startDate: pref.startDate,
         endDate: pref.endDate,
-        type: 'labor',
+        type: "labor",
       });
     }
   }
@@ -78,19 +78,20 @@ export function checkSalesConcurrentLimit(
   endDate: string,
   state: AppState,
   rule: CorporateRule,
-  excludeId?: string
+  excludeId?: string,
 ): ValidationResult | null {
-  if (candidateEmployee.positionCode !== 'MPP') return null;
+  if (candidateEmployee.positionCode !== "MPP") return null;
 
   const candidateDates = getDateRangeArray(startDate, endDate);
   const mppEmployees = new Set(
-    state.employees.filter((e) => e.positionCode === 'MPP').map((e) => e.id)
+    state.employees.filter((e) => e.positionCode === "MPP").map((e) => e.id),
   );
   const confirmed = getConfirmedLeaves(state, excludeId);
 
   // Filter confirmed leaves belonging to MPP
   const mppConfirmed = confirmed.filter(
-    (c) => mppEmployees.has(c.employeeId) && c.employeeId !== candidateEmployee.id
+    (c) =>
+      mppEmployees.has(c.employeeId) && c.employeeId !== candidateEmployee.id,
   );
 
   const conflictingDates: string[] = [];
@@ -121,15 +122,15 @@ export function checkSalesConcurrentLimit(
   if (conflictingDates.length > 0) {
     const limit = rule.value;
     return {
-      code: 'CORP-01',
-      kind: 'corporate_conflict',
+      code: "CORP-01",
+      kind: "corporate_conflict",
       ruleVersion: rule.version,
       actual: maxCountFound,
       limit: limit,
       affectedDates: conflictingDates,
       conflictingEmployeeIds: Array.from(conflictingEmployeeIds),
       message: `Превышен лимит одновременного отсутствия менеджеров продаж: на ${conflictingDates.length} дн. запланировано ${maxCountFound} чел. при лимите не более ${limit} одновременно.`,
-      sourceRef: 'Регламент ООО «Авистрейд» от 15.07.2026, п. 2.1',
+      sourceRef: "Регламент ООО «Авистрейд» от 15.07.2026, п. 2.1",
     };
   }
 
@@ -144,25 +145,29 @@ export function checkIncompatiblePairs(
   startDate: string,
   endDate: string,
   state: AppState,
-  excludeId?: string
+  excludeId?: string,
 ): ValidationResult[] {
   const results: ValidationResult[] = [];
   const confirmed = getConfirmedLeaves(state, excludeId);
 
   // Find all pairs involving candidateEmployeeId
   const relevantPairs = state.incompatibilityPairs.filter(
-    (p) => p.employeeAId === candidateEmployeeId || p.employeeBId === candidateEmployeeId
+    (p) =>
+      p.employeeAId === candidateEmployeeId ||
+      p.employeeBId === candidateEmployeeId,
   );
 
   for (const pair of relevantPairs) {
     const otherId =
-      pair.employeeAId === candidateEmployeeId ? pair.employeeBId : pair.employeeAId;
+      pair.employeeAId === candidateEmployeeId
+        ? pair.employeeBId
+        : pair.employeeAId;
 
     // Check if otherId is absent on overlapping dates
     const otherAbsences = confirmed.filter(
       (c) =>
         c.employeeId === otherId &&
-        areIntervalsOverlapping(startDate, endDate, c.startDate, c.endDate)
+        areIntervalsOverlapping(startDate, endDate, c.startDate, c.endDate),
     );
 
     if (otherAbsences.length > 0) {
@@ -172,7 +177,7 @@ export function checkIncompatiblePairs(
       for (const d of candidateDates) {
         if (
           otherAbsences.some((a) =>
-            areIntervalsOverlapping(a.startDate, a.endDate, d, d)
+            areIntervalsOverlapping(a.startDate, a.endDate, d, d),
           )
         ) {
           datesOverlap.push(d);
@@ -184,7 +189,7 @@ export function checkIncompatiblePairs(
 
       results.push({
         code: pair.ruleCode,
-        kind: 'corporate_conflict',
+        kind: "corporate_conflict",
         affectedDates: datesOverlap,
         conflictingEmployeeIds: [otherId],
         message: `Недопустимо одновременное отсутствие по должности (${pair.scopeDescription}): пересечение с сотрудником ${otherName} на ${datesOverlap.length} дн.`,
@@ -206,7 +211,7 @@ export function checkSummerMaxDays(
   endDate: string,
   state: AppState,
   rule: CorporateRule,
-  excludeId?: string
+  excludeId?: string,
 ): {
   result: ValidationResult | null;
   totalSummerDays: number;
@@ -218,7 +223,10 @@ export function checkSummerMaxDays(
 
   // 1. Collect labor leave days of employee in summer from approved / existing
   const confirmed = getConfirmedLeaves(state, excludeId).filter(
-    (c) => c.employeeId === candidateEmployeeId && c.type === 'labor'
+    (c) =>
+      c.employeeId === candidateEmployeeId &&
+      c.type === "labor" &&
+      c.startDate.slice(0, 4) === startDate.slice(0, 4),
   );
 
   const approvedSummerDates = new Set<string>();
@@ -251,7 +259,8 @@ export function checkSummerMaxDays(
   for (const pref of state.preferences) {
     if (
       pref.employeeId === candidateEmployeeId &&
-      pref.status === 'submitted' &&
+      pref.status === "submitted" &&
+      pref.startDate.slice(0, 4) === startDate.slice(0, 4) &&
       pref.id !== excludeId
     ) {
       const dates = getDateRangeArray(pref.startDate, pref.endDate);
@@ -269,13 +278,13 @@ export function checkSummerMaxDays(
   let result: ValidationResult | null = null;
   if (excess > 0) {
     result = {
-      code: 'CORP-06',
-      kind: 'corporate_conflict',
+      code: "CORP-06",
+      kind: "corporate_conflict",
       ruleVersion: rule.version,
       actual: totalSummerDays,
       limit: summerLimit,
       message: `Превышен летний лимит отпуска (01.06–31.08): суммарный расход составит ${totalSummerDays} дн. при корпоративном лимите ${summerLimit} дн. (превышение на ${excess} дн.).`,
-      sourceRef: 'Регламент ООО «Авистрейд», п. 3.2 (допущение A-03)',
+      sourceRef: "Регламент ООО «Авистрейд», п. 3.2 (допущение A-03)",
     };
   }
 
@@ -296,7 +305,7 @@ export function checkSummerMaxDays(
 export function checkNoticeAdvance(
   startDate: string,
   submittedOn: string,
-  rule: CorporateRule
+  rule: CorporateRule,
 ): ValidationResult | null {
   const noticeMonths = rule.value;
   if (noticeMonths <= 0) return null;
@@ -304,13 +313,13 @@ export function checkNoticeAdvance(
   const thresholdDate = addCalendarMonths(submittedOn, noticeMonths);
   if (compareDateStr(startDate, thresholdDate) < 0) {
     return {
-      code: 'CORP-07',
-      kind: 'corporate_conflict',
+      code: "CORP-07",
+      kind: "corporate_conflict",
       ruleVersion: rule.version,
       actual: startDate,
       limit: thresholdDate,
       message: `Пожелание подано менее чем за ${noticeMonths} календарный месяц(а) до начала: дата старта ${startDate} раньше необходимого срока ${thresholdDate}. Требуется отдельное рассмотрение исключения.`,
-      sourceRef: 'Регламент ООО «Авистрейд», п. 1.4',
+      sourceRef: "Регламент ООО «Авистрейд», п. 1.4",
     };
   }
 
@@ -328,30 +337,32 @@ export function checkReplacementEmployee(
   startDate: string,
   endDate: string,
   state: AppState,
-  excludeId?: string
+  excludeId?: string,
 ): ValidationResult | null {
   if (!replacementEmployeeId) {
     return {
-      code: 'INPUT_REPLACEMENT_REQUIRED',
-      kind: 'input_error',
-      message: 'Не выбран замещающий сотрудник.',
+      code: "INPUT_REPLACEMENT_REQUIRED",
+      kind: "input_error",
+      message: "Не выбран замещающий сотрудник.",
     };
   }
 
   if (replacementEmployeeId === candidateEmployeeId) {
     return {
-      code: 'INPUT_REPLACEMENT_SELF',
-      kind: 'input_error',
-      message: 'Замещающим сотрудником не может быть указан сам заявитель.',
+      code: "INPUT_REPLACEMENT_SELF",
+      kind: "input_error",
+      message: "Замещающим сотрудником не может быть указан сам заявитель.",
     };
   }
 
-  const replacement = state.employees.find((e) => e.id === replacementEmployeeId);
+  const replacement = state.employees.find(
+    (e) => e.id === replacementEmployeeId,
+  );
   if (!replacement || !replacement.active) {
     return {
-      code: 'INPUT_REPLACEMENT_INACTIVE',
-      kind: 'input_error',
-      message: 'Указанный замещающий сотрудник не найден или не активен.',
+      code: "INPUT_REPLACEMENT_INACTIVE",
+      kind: "input_error",
+      message: "Указанный замещающий сотрудник не найден или не активен.",
     };
   }
 
@@ -360,7 +371,7 @@ export function checkReplacementEmployee(
   const replacementAbsences = confirmed.filter(
     (c) =>
       c.employeeId === replacementEmployeeId &&
-      areIntervalsOverlapping(startDate, endDate, c.startDate, c.endDate)
+      areIntervalsOverlapping(startDate, endDate, c.startDate, c.endDate),
   );
 
   if (replacementAbsences.length > 0) {
@@ -369,7 +380,7 @@ export function checkReplacementEmployee(
     for (const d of candidateDates) {
       if (
         replacementAbsences.some((a) =>
-          areIntervalsOverlapping(a.startDate, a.endDate, d, d)
+          areIntervalsOverlapping(a.startDate, a.endDate, d, d),
         )
       ) {
         datesOverlap.push(d);
@@ -377,12 +388,12 @@ export function checkReplacementEmployee(
     }
 
     return {
-      code: 'CORP-08',
-      kind: 'corporate_conflict',
+      code: "CORP-08",
+      kind: "corporate_conflict",
       conflictingEmployeeIds: [replacementEmployeeId],
       affectedDates: datesOverlap,
       message: `Замещающий сотрудник (${replacement.name}) сам находится в подтвержденном отпуске на даты пересечения (${datesOverlap.length} дн.).`,
-      sourceRef: 'Регламент ООО «Авистрейд», п. 2.4',
+      sourceRef: "Регламент ООО «Авистрейд», п. 2.4",
     };
   }
 
