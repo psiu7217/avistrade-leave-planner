@@ -37,6 +37,7 @@ import {
 } from "../domain/validatePreference";
 import {
   Preference,
+  PreferenceStatus,
   ValidationResult,
 } from "../domain/types";
 import { useDialogFocus } from "../components/useDialogFocus";
