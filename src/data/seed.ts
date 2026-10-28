@@ -21,6 +21,7 @@ export const SEED_DEPARTMENTS: Department[] = [
 export const SEED_EMPLOYEES: Employee[] = [
   {
     id: 'emp-mpp-3', // Default employee for user demo
+    contractEndDate: '2027-01-25', // Fictional deadline example, not a personnel fact.
     name: 'Иван Морозов',
     positionCode: 'MPP',
     positionName: 'Менеджер по продажам (МПП)',

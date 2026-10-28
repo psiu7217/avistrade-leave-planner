@@ -3,7 +3,9 @@
  */
 
 export type Role = "employee" | "hr";
-export type HRTab = "calendar" | "queue" | "control" | "rules" | "audit";
+export type HRTab =
+  "calendar" | "queue" | "control" | "balances" | "rules" | "audit";
+export type LeaveType = "labor" | "unpaid";
 
 export type PositionCode =
   "MPP" | "SECTION_MGR" | "NO" | "RO" | "ZAV" | "ZTV" | "ID" | "HR" | "OTHER";
@@ -22,6 +24,7 @@ export interface Employee {
   branchGroupId?: string;
   executiveGroupId?: string;
   requiresLegalReview: boolean;
+  contractEndDate?: string;
 }
 
 export interface Department {
@@ -49,6 +52,9 @@ export interface AcknowledgementSnapshot {
 }
 
 export interface Preference {
+  leaveType?: LeaveType; // Missing in older saves means labor.
+  unpaidReason?: "personal" | "study";
+  unpaidApprovalBasis?: string;
   id: string;
   employeeId: string;
   startDate: string; // 'YYYY-MM-DD'

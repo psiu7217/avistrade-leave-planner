@@ -94,6 +94,8 @@ export function isAppState(value: unknown): value is AppState {
         e &&
         typeof e.id === "string" &&
         typeof e.name === "string" &&
+        (e.contractEndDate === undefined ||
+          isValidDateStr(e.contractEndDate)) &&
         Array.isArray(e.accessRoles),
     )
   )
@@ -116,6 +118,12 @@ export function isAppState(value: unknown): value is AppState {
       (p) =>
         p &&
         typeof p.id === "string" &&
+        (p.leaveType === undefined ||
+          ["labor", "unpaid"].includes(p.leaveType)) &&
+        (p.unpaidReason === undefined ||
+          ["personal", "study"].includes(p.unpaidReason)) &&
+        (p.unpaidApprovalBasis === undefined ||
+          typeof p.unpaidApprovalBasis === "string") &&
         ids.has(p.employeeId) &&
         typeof p.startDate === "string" &&
         typeof p.endDate === "string" &&

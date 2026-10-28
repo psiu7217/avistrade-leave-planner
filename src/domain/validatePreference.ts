@@ -33,6 +33,8 @@ import {
 } from "./legalChecks";
 
 export interface PreferenceCandidate {
+  leaveType?: "labor" | "unpaid";
+  unpaidReason?: "personal" | "study";
   id?: string;
   employeeId: string;
   startDate: string;
@@ -78,6 +80,27 @@ export function validatePreference(
   excludeRequestId?: string,
 ): ValidationSummary {
   const results: ValidationResult[] = [];
+  const unpaid = candidate.leaveType === "unpaid";
+  if (
+    candidate.leaveType !== undefined &&
+    !["labor", "unpaid"].includes(candidate.leaveType)
+  )
+    results.push({
+      code: "INPUT_LEAVE_TYPE",
+      kind: "input_error",
+      message: "Неизвестный вид отпуска.",
+    });
+  if (
+    unpaid &&
+    (!["personal", "study"].includes(candidate.unpaidReason ?? "") ||
+      !(candidate.comment ?? "").trim())
+  )
+    results.push({
+      code: "INPUT_UNPAID_REASON",
+      kind: "input_error",
+      message:
+        "Выберите причину неоплачиваемого отпуска и кратко опишите основание.",
+    });
   const effectiveExcludeId = excludeRequestId || candidate.id;
 
   // 1. Basic format & date integrity checks
@@ -224,20 +247,34 @@ export function validatePreference(
 
   // 4. Legal checks
   // 4.1. Holidays and start date (LEGAL-01)
-  const holidayCheck = checkLegalHolidayRules(
-    candidate.startDate,
-    candidate.endDate,
-  );
+  const holidayCheck = unpaid
+    ? {
+        results: [] as ValidationResult[],
+        absenceDays: getDateRangeArray(candidate.startDate, candidate.endDate)
+          .length,
+        leaveDays: 0,
+        holidayDates: [] as string[],
+      }
+    : checkLegalHolidayRules(candidate.startDate, candidate.endDate);
   results.push(...holidayCheck.results);
 
   // 4.2. Work year parts, total days & 14 days minimum (LEGAL-02)
-  const workYearCheck = checkWorkYearParts(
-    employee,
-    candidate.startDate,
-    candidate.endDate,
-    state,
-    effectiveExcludeId,
-  );
+  const workYearCheck = unpaid
+    ? {
+        results: [] as ValidationResult[],
+        parts: [],
+        entitlementDays: 0,
+        usedAndPlannedLeaveDays: 0,
+        remainingDays: 0,
+        hasFourteenDayPart: false,
+      }
+    : checkWorkYearParts(
+        employee,
+        candidate.startDate,
+        candidate.endDate,
+        state,
+        effectiveExcludeId,
+      );
   results.push(...workYearCheck.results);
 
   // 4.3. Special legal category (LEGAL-03)
@@ -289,14 +326,16 @@ export function validatePreference(
   const summerRule =
     state.corporateRules.summerMaxDays ??
     ({ code: "summerMaxDays", value: 14, version: 0 } as any);
-  const summerCheck = checkSummerMaxDays(
-    candidate.employeeId,
-    candidate.startDate,
-    candidate.endDate,
-    state,
-    summerRule,
-    effectiveExcludeId,
-  );
+  const summerCheck = unpaid
+    ? { result: null, totalSummerDays: 0, pendingSummerDays: 0 }
+    : checkSummerMaxDays(
+        candidate.employeeId,
+        candidate.startDate,
+        candidate.endDate,
+        state,
+        summerRule,
+        effectiveExcludeId,
+      );
   if (summerCheck.result) {
     results.push(summerCheck.result);
   }
@@ -319,8 +358,50 @@ export function validatePreference(
     effectiveSubmittedDate,
     noticeRule,
   );
-  if (noticeCheck) {
+  if (noticeCheck && !unpaid) {
     results.push(noticeCheck);
+  }
+
+  if (unpaid)
+    results.push({
+      code: "UNPAID_HR_BASIS",
+      kind: "warning",
+      message:
+        candidate.unpaidReason === "study"
+          ? "Учёба: HR должен проверить справку-вызов, условия учебных гарантий и положена ли оплата. Запрос не определяет право на неоплачиваемый отпуск автоматически. Перед согласованием укажите проверенное основание."
+          : "Отпуск без сохранения зарплаты требует проверки основания и продолжительности HR. Перед согласованием укажите основание. Трудовой остаток не уменьшается; рабочий год может требовать кадрового уточнения.",
+      sourceRef: "ТК РБ ст. 164, 189–190, 214–217",
+    });
+
+  if (unpaid && candidate.unpaidReason === "personal") {
+    const dates = new Set(
+      getDateRangeArray(candidate.startDate, candidate.endDate),
+    );
+    const intervals = [
+      ...state.existingAbsences.filter(
+        (a) => a.employeeId === candidate.employeeId && a.type === "unpaid",
+      ),
+      ...state.preferences.filter(
+        (p) =>
+          p.employeeId === candidate.employeeId &&
+          p.id !== effectiveExcludeId &&
+          p.status === "approved" &&
+          p.leaveType === "unpaid" &&
+          p.unpaidReason !== "study",
+      ),
+    ];
+    intervals.forEach((a) =>
+      getDateRangeArray(a.startDate, a.endDate)
+        .filter((d) => d.startsWith(candidate.startDate.slice(0, 4)))
+        .forEach((d) => dates.add(d)),
+    );
+    if (dates.size > 30)
+      results.push({
+        code: "UNPAID_DURATION_REVIEW",
+        kind: "legal_review",
+        message: `В известных записях и этом запросе ${dates.size} календарных дней неоплачиваемого отсутствия за год. Для личных обстоятельств свыше 30 дней требуется проверить отдельное основание и допустимую продолжительность. Исходные записи без вида основания требуют классификации HR. Автоматическое согласование расширенного срока в прототипе не реализовано.`,
+        sourceRef: "ТК РБ ст. 189–190",
+      });
   }
 
   // 6. Competition check (Warning only)

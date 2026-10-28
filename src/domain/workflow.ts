@@ -10,6 +10,7 @@ import {
   ExceptionRecord,
   Preference,
   ValidationResult,
+  LeaveType,
 } from "./types";
 import {
   validatePreference,
@@ -26,6 +27,8 @@ export type AppAction =
         endDate: string;
         replacementEmployeeId: string;
         comment: string;
+        leaveType?: LeaveType;
+        unpaidReason?: "personal" | "study";
       };
       actorId: string;
       actorName: string;
@@ -40,6 +43,8 @@ export type AppAction =
         replacementEmployeeId: string;
         comment: string;
         acknowledgedCodes?: string[];
+        leaveType?: LeaveType;
+        unpaidReason?: "personal" | "study";
         acknowledgedFingerprint?: string;
       };
       actorId: string;
@@ -57,6 +62,7 @@ export type AppAction =
       type: "APPROVE_PREFERENCE";
       payload: {
         preferenceId: string;
+        unpaidApprovalBasis?: string;
       };
       actorId: string;
       actorName: string;
@@ -66,6 +72,7 @@ export type AppAction =
       payload: {
         preferenceId: string;
         reason: string;
+        unpaidApprovalBasis?: string;
       };
       actorId: string;
       actorName: string;
@@ -99,6 +106,12 @@ export type AppAction =
       actorName: string;
     }
   | {
+      type: "UPDATE_CONTRACT";
+      payload: { employeeId: string; contractEndDate?: string };
+      actorId: string;
+      actorName: string;
+    }
+  | {
       type: "RESET_STATE";
       payload: {
         initialState: AppState;
@@ -119,6 +132,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
     "RETURN_PREFERENCE",
     "REJECT_PREFERENCE",
     "UPDATE_RULE",
+    "UPDATE_CONTRACT",
   ].includes(action.type);
   if (hrAction && !actor.accessRoles.includes("hr"))
     throw new Error("Действие доступно только HR.");
@@ -153,6 +167,43 @@ export function appReducer(state: AppState, action: AppAction): AppState {
   );
 
   switch (action.type) {
+    case "UPDATE_CONTRACT": {
+      const employee = state.employees.find(
+        (e) => e.id === action.payload.employeeId && e.active,
+      );
+      const date = action.payload.contractEndDate;
+      if (
+        !employee ||
+        (date !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(date))
+      )
+        throw new Error("Укажите сотрудника и корректную дату контракта.");
+      if (
+        date &&
+        (!Number.isFinite(Date.parse(date)) ||
+          new Date(date).toISOString().slice(0, 10) !== date)
+      )
+        throw new Error("Некорректная дата контракта.");
+      return {
+        ...state,
+        employees: state.employees.map((e) =>
+          e.id === employee.id ? { ...e, contractEndDate: date } : e,
+        ),
+        auditEvents: [
+          {
+            id: newId("audit"),
+            actorId: actor.id,
+            actorName: actor.name,
+            action: "UPDATE_CONTRACT",
+            entityId: employee.id,
+            summary: `Срок контракта: ${employee.name}`,
+            before: employee.contractEndDate,
+            after: date,
+            createdAt: nowIso,
+          },
+          ...state.auditEvents,
+        ],
+      };
+    }
     case "SAVE_DRAFT": {
       const {
         id,
@@ -166,6 +217,11 @@ export function appReducer(state: AppState, action: AppAction): AppState {
 
       const targetId = id || newId("pref");
       const updatedPref: Preference = {
+        leaveType: action.payload.leaveType ?? "labor",
+        unpaidReason:
+          action.payload.leaveType === "unpaid"
+            ? action.payload.unpaidReason
+            : undefined,
         id: targetId,
         employeeId,
         startDate,
@@ -213,6 +269,8 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       } = action.payload;
 
       const candidate = {
+        leaveType: action.payload.leaveType,
+        unpaidReason: action.payload.unpaidReason,
         id,
         employeeId,
         startDate,
@@ -259,6 +317,11 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         replacementEmployeeId,
         comment,
         status: "submitted",
+        leaveType: action.payload.leaveType ?? "labor",
+        unpaidReason:
+          action.payload.leaveType === "unpaid"
+            ? action.payload.unpaidReason
+            : undefined,
         revision: existing ? existing.revision + 1 : 1,
         createdAt: existing ? existing.createdAt : nowIso,
         updatedAt: nowIso,
@@ -342,6 +405,13 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       if (!target || target.status !== "submitted") {
         throw new Error("Пожелание не найдено или не ожидает рассмотрения");
       }
+      if (
+        target.leaveType === "unpaid" &&
+        (action.payload.unpaidApprovalBasis ?? "").trim().length < 10
+      )
+        throw new Error(
+          "Укажите проверенное основание неоплачиваемого отпуска (не менее 10 символов).",
+        );
 
       // Re-validate against current state
       const validation = validatePreference(
@@ -358,6 +428,10 @@ export function appReducer(state: AppState, action: AppAction): AppState {
 
       const updated: Preference = {
         ...target,
+        unpaidApprovalBasis:
+          target.leaveType === "unpaid"
+            ? action.payload.unpaidApprovalBasis?.trim()
+            : undefined,
         status: "approved",
         isException: false,
         approvedRuleVersions: ruleVersions,
@@ -369,6 +443,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         actorId: action.actorId,
         actorName: action.actorName,
         action: "APPROVE_PREFERENCE",
+        comment: updated.unpaidApprovalBasis,
         entityId: target.id,
         summary: `Пожелание (${target.startDate} — ${target.endDate}) согласовано в рабочем плане`,
         createdAt: nowIso,
@@ -396,6 +471,13 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       if (!target || target.status !== "submitted") {
         throw new Error("Пожелание не найдено или не ожидает рассмотрения");
       }
+      if (
+        target.leaveType === "unpaid" &&
+        (action.payload.unpaidApprovalBasis ?? "").trim().length < 10
+      )
+        throw new Error(
+          "Укажите проверенное основание неоплачиваемого отпуска (не менее 10 символов).",
+        );
 
       // Re-validate against current state
       const validation = validatePreference(
@@ -437,6 +519,10 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         ...target,
         status: "approved",
         isException: true,
+        unpaidApprovalBasis:
+          target.leaveType === "unpaid"
+            ? action.payload.unpaidApprovalBasis?.trim()
+            : undefined,
         approvedRuleVersions: ruleVersions,
         exceptionId: exceptionRecord.id,
         updatedAt: nowIso,

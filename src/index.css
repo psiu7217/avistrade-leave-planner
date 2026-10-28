@@ -277,6 +277,67 @@ button:disabled {
   max-width: 310px;
   text-align: left;
 }
+.balance-details,
+.balance-note,
+.balance-workyear {
+  padding: 16px;
+  border-radius: 10px;
+  background: #f6f8f7;
+  color: #34495e;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.balance-details {
+  display: grid;
+  gap: 12px;
+  margin: -8px 0 20px;
+  border: 1px solid #d7e4df;
+}
+.balance-details p,
+.balance-workyear p {
+  margin: 6px 0;
+}
+.balance-roster {
+  display: grid;
+  gap: 16px;
+  margin: 16px 0;
+}
+.balance-person {
+  padding: 20px;
+  border: 1px solid #cbd5df;
+  border-radius: 12px;
+}
+.balance-person h3 {
+  font-size: 18px;
+  font-weight: 700;
+}
+.balance-workyear {
+  margin-top: 10px;
+}
+.deadline-alert {
+  color: #8b3514;
+  background: #fff2df;
+  padding: 8px 12px;
+  border-left: 4px solid #aa4b19;
+  border-radius: 4px;
+  margin: 8px 0;
+}
+.balance-note label,
+.simple-dialog label,
+.control-filters label {
+  display: grid;
+  gap: 6px;
+  font-weight: 600;
+}
+.balance-note textarea,
+.simple-dialog input,
+.control-filters select {
+  border: 1px solid #a8b7c3;
+  border-radius: 6px;
+  padding: 8px;
+  background: white;
+  color: #34495e;
+}
 .control-filters {
   display: flex;
   flex-wrap: wrap;
