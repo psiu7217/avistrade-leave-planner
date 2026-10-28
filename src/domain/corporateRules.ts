@@ -193,7 +193,7 @@ export function checkIncompatiblePairs(
         affectedDates: datesOverlap,
         conflictingEmployeeIds: [otherId],
         message: `Недопустимо одновременное отсутствие по должности (${pair.scopeDescription}): пересечение с сотрудником ${otherName} на ${datesOverlap.length} дн.`,
-        sourceRef: `Регламент ООО «Авистрейд», ${pair.ruleCode}`,
+        sourceRef: "Регламент ООО «Авистрейд», ограничения по должностям",
       });
     }
   }
@@ -285,7 +285,7 @@ export function checkSummerMaxDays(
       actual: totalSummerDays,
       limit: summerLimit,
       message: `Превышен летний лимит отпуска (01.06–31.08): суммарный расход составит ${totalSummerDays} дн. при корпоративном лимите ${summerLimit} дн. (превышение на ${excess} дн.).`,
-      sourceRef: "Регламент ООО «Авистрейд», п. 3.2 (допущение A-03)",
+      sourceRef: "Регламент ООО «Авистрейд», п. 3.2",
     };
   }
 
