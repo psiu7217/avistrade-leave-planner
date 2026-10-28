@@ -1,0 +1,22 @@
+name: avistrade-leaveflow
+
+services:
+  leaveflow:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    networks:
+      - traefik-proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-proxy"
+      - "traefik.http.routers.avistrade-leaveflow.rule=Host(`avistrade.anisko.com.by`)"
+      - "traefik.http.routers.avistrade-leaveflow.entrypoints=websecure"
+      - "traefik.http.routers.avistrade-leaveflow.tls=true"
+      - "traefik.http.routers.avistrade-leaveflow.tls.certresolver=le"
+      - "traefik.http.services.avistrade-leaveflow.loadbalancer.server.port=80"
+
+networks:
+  traefik-proxy:
+    external: true
