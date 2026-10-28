@@ -42,15 +42,12 @@ import {
 } from "../domain/types";
 import { useDialogFocus } from "../components/useDialogFocus";
 import { getEmployeeBalances } from "../domain/leaveBalances";
+import {
+  getAuditActionLabel,
+  getPreferenceStatusLabel,
+  readableText,
+} from "../domain/presentation";
 
-const labels: Record<PreferenceStatus, string> = {
-  draft: "Черновик",
-  submitted: "На рассмотрении",
-  returned: "Нужно исправить",
-  approved: "Согласовано в плане",
-  rejected: "Отклонено",
-  withdrawn: "Отозвано",
-};
 function privateMessage(result: ValidationResult): string {
   if (result.code === "UNPAID_HR_BASIS")
     return "HR проверит основание и продолжительность. Для сессии может потребоваться справка-вызов и проверка права на оплату. Трудовой остаток не расходуется.";
@@ -914,7 +911,7 @@ export function EmployeePage() {
                   {visibleResults.map((r, i) => (
                     <p key={i} className={`finding finding-${r.kind}`}>
                       <AlertTriangle size={16} />
-                      <span>{privateMessage(r)}</span>
+                      <span>{readableText(privateMessage(r))}</span>
                     </p>
                   ))}
                 </div>
@@ -993,7 +990,7 @@ export function EmployeePage() {
           {items.map((item) => {
             const calc = calculateLeaveDays(item.startDate, item.endDate);
             const status = item.pref
-              ? labels[item.status]
+              ? getPreferenceStatusLabel(item.status)
               : item.type === "labor"
                 ? item.past
                   ? "Использован"
@@ -1061,21 +1058,7 @@ export function EmployeePage() {
                                 })}
                               </time>{" "}
                               ·{" "}
-                              {
-                                (
-                                  {
-                                    SAVE_DRAFT: "Сохранён черновик",
-                                    SUBMIT_PREFERENCE: "Отправлено HR",
-                                    APPROVE_PREFERENCE: "Согласовано в плане",
-                                    APPROVE_EXCEPTION:
-                                      "Согласовано с исключением",
-                                    RETURN_PREFERENCE:
-                                      "Возвращено на корректировку",
-                                    REJECT_PREFERENCE: "Отклонено",
-                                    WITHDRAW_PREFERENCE: "Отозвано",
-                                  } as Record<string, string>
-                                )[e.action]
-                              }
+                              {getAuditActionLabel(e.action)}
                             </li>
                           ))}
                         <li>

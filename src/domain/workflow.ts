@@ -638,7 +638,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
 
       const currentRule = state.corporateRules[code];
       if (!currentRule) {
-        throw new Error(`Правило с кодом ${code} не найдено.`);
+        throw new Error("Выбранное правило не найдено. Обновите страницу и попробуйте снова.");
       }
       const max =
         code === "salesMaxConcurrent"
@@ -675,7 +675,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         actorName: action.actorName,
         action: "UPDATE_RULE",
         entityId: code,
-        summary: `Изменен параметр "${currentRule.name}": было ${currentRule.value}, стало ${newValue} (версия v${updatedRule.version}). Основание: ${cleanReason}`,
+        summary: `Изменен параметр "${currentRule.name}": было ${currentRule.value}, стало ${newValue}. Основание: ${cleanReason}`,
         comment: cleanReason,
         createdAt: nowIso,
       };

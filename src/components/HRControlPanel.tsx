@@ -135,7 +135,7 @@ export function HRControlPanel({
             setFilter("pending");
           }}
         >
-          <span>Трудовых пожеланий у HR</span>
+          <span>Заявок на трудовой отпуск</span>
           <strong>
             {pending}
             <small> на рассмотрении</small>

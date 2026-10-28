@@ -26,6 +26,15 @@ import {
   changedApprovalConflicts,
 } from "../domain/validatePreference";
 import { CorporateRule, Employee, Horizon, Preference } from "../domain/types";
+import {
+  getAuditActionLabel,
+  getCorporateRuleName,
+  getAbsenceTypeLabel,
+  getPreferenceStatusLabel,
+  getValidationKindLabel,
+  formatAuditTimestampRu,
+  readableText,
+} from "../domain/presentation";
 import { useDialogFocus } from "../components/useDialogFocus";
 import { HRControlPanel } from "../components/HRControlPanel";
 import { HRBalancesPanel } from "../components/HRBalancesPanel";
@@ -304,7 +313,7 @@ export function HRPage({
       });
       showNotification(
         "success",
-        "Корпоративное исключение успешно согласовано с сохранением основания в аудите.",
+        "Корпоративное исключение успешно согласовано с сохранением основания в истории решений.",
       );
       setActionModalType(null);
       setReviewPreference(null);
@@ -395,7 +404,7 @@ export function HRPage({
       });
       showNotification(
         "success",
-        `Правило "${editingRule.name}" успешно обновлено. Календарь пересчитан.`,
+        `Правило «${getCorporateRuleName(editingRule)}» обновлено. График пересчитан.`,
       );
       setEditingRule(null);
       setRuleChangeReason("");
@@ -449,7 +458,7 @@ export function HRPage({
   const handleExportCSV = () => {
     const rows = [
       [
-        "ID",
+        "№",
         "Сотрудник",
         "Должность",
         "Отдел",
@@ -468,7 +477,7 @@ export function HRPage({
         const emp = state.employees.find((e) => e.id === p.employeeId);
         const days = getDateRangeArray(p.startDate, p.endDate).length;
         rows.push([
-          p.id,
+          String(rows.length),
           emp ? emp.name : p.employeeId,
           emp ? emp.positionName : "",
           emp ? emp.departmentName : "",
@@ -485,7 +494,7 @@ export function HRPage({
       const emp = state.employees.find((e) => e.id === a.employeeId);
       const days = getDateRangeArray(a.startDate, a.endDate).length;
       rows.push([
-        a.id,
+        String(rows.length),
         emp ? emp.name : a.employeeId,
         emp ? emp.positionName : "",
         emp ? emp.departmentName : "",
@@ -493,7 +502,7 @@ export function HRPage({
         a.endDate,
         String(days),
         "Подтвержденное отсутствие",
-        a.note || a.type,
+        a.note || getAbsenceTypeLabel(a.type),
       ]);
     });
 
@@ -643,7 +652,7 @@ export function HRPage({
             }`}
           >
             <History className="w-4 h-4" />
-            <span>Журнал аудита ({state.auditEvents.length})</span>
+            <span>История решений ({state.auditEvents.length})</span>
           </button>
         </div>
 
@@ -965,7 +974,7 @@ export function HRPage({
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-500">
                     <th className="py-2.5 px-3 font-semibold">Сотрудник</th>
-                    <th className="py-2.5 px-3 font-semibold">Период & Дни</th>
+                    <th className="py-2.5 px-3 font-semibold">Период и дни</th>
                     <th className="py-2.5 px-3 font-semibold">
                       Выявленные проверки
                     </th>
@@ -1014,7 +1023,7 @@ export function HRPage({
                       } else {
                         statusBadge = (
                           <span className="text-slate-400 font-medium">
-                            {preference.status}
+                            {getPreferenceStatusLabel(preference.status)}
                           </span>
                         );
                       }
@@ -1061,7 +1070,7 @@ export function HRPage({
                                   }`}
                                 >
                                   <span>•</span>
-                                  <span>{r.message}</span>
+                                  <span>{readableText(r.message)}</span>
                                 </div>
                               ))}
                               {validation.results.length === 0 && (
@@ -1104,8 +1113,8 @@ export function HRPage({
             <p className="text-xs text-slate-600 mt-1">
               HR управляет параметрами регламента ООО «Авистрейд». Изменение
               любого параметра требует обязательного основания (не менее 10
-              символов), увеличивает версию правила и регистрируется в журнале
-              аудита с пересчетом графика.
+              символов), увеличивает версию правила и сохраняется в истории
+              изменений. График автоматически пересчитывается.
             </p>
           </div>
 
@@ -1117,16 +1126,11 @@ export function HRPage({
                   className="p-4 rounded-xl border border-slate-200 bg-[#F6F8F7] flex flex-col justify-between space-y-3"
                 >
                   <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-bold text-[#007A60]">
-                        {rule.code}
-                      </span>
-                      <span className="text-[11px] text-slate-500 font-mono">
-                        v{rule.version}
-                      </span>
-                    </div>
+                    <p className="text-xs font-bold text-[#007A60] mb-1">
+                      Правило компании
+                    </p>
                     <h3 className="text-sm font-bold text-[#34495E]">
-                      {rule.name}
+                      {getCorporateRuleName(rule)}
                     </h3>
                     <p className="text-xs text-slate-600 mt-1 leading-snug">
                       {rule.description}
@@ -1170,7 +1174,7 @@ export function HRPage({
         <div className="bg-white rounded-xl p-5 border border-[#D7DFDC] shadow-xs space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-bold text-[#34495E]">
-              Журнал аудита действий и решений
+              История действий и решений
             </h2>
             <span className="text-xs text-slate-500">
               Событий: {state.auditEvents.length}
@@ -1181,31 +1185,31 @@ export function HRPage({
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-slate-200 text-slate-500">
-                  <th className="py-2.5 px-3 font-semibold">Время (UTC)</th>
+                  <th className="py-2.5 px-3 font-semibold">Дата и время</th>
                   <th className="py-2.5 px-3 font-semibold">Инициатор</th>
                   <th className="py-2.5 px-3 font-semibold">Действие</th>
                   <th className="py-2.5 px-3 font-semibold">Описание</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 font-mono text-[11px]">
+              <tbody className="divide-y divide-slate-100 text-[11px]">
                 {state.auditEvents.map((evt) => (
                   <tr
                     key={evt.id}
                     className="hover:bg-slate-50/70 transition-colors"
                   >
                     <td className="py-2.5 px-3 whitespace-nowrap text-slate-500">
-                      {evt.createdAt.slice(0, 19).replace("T", " ")}
+                      {formatAuditTimestampRu(evt.createdAt)}
                     </td>
                     <td className="py-2.5 px-3 whitespace-nowrap font-sans font-semibold text-slate-800">
                       {evt.actorName}
                     </td>
                     <td className="py-2.5 px-3 whitespace-nowrap">
                       <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold">
-                        {evt.action}
+                        {getAuditActionLabel(evt.action)}
                       </span>
                     </td>
                     <td className="py-2.5 px-3 font-sans text-slate-700">
-                      {evt.summary}
+                      {readableText(evt.summary)}
                     </td>
                   </tr>
                 ))}
@@ -1227,7 +1231,7 @@ export function HRPage({
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <div>
                 <h3 className="text-base font-bold text-[#34495E]">
-                  Рассмотрение пожелания на отпуск #{reviewPreference.id}
+                  Рассмотрение пожелания на отпуск
                 </h3>
                 <p className="text-xs text-slate-500">
                   Сотрудник:{" "}
@@ -1371,15 +1375,15 @@ export function HRPage({
                   >
                     <div className="flex items-center justify-between font-bold mb-1">
                       <span>
-                        {r.code}: {r.kind}
+                        {getValidationKindLabel(r.kind)}
                       </span>
                       {r.sourceRef && (
                         <span className="text-[10px] opacity-75">
-                          {r.sourceRef}
+                          {readableText(r.sourceRef)}
                         </span>
                       )}
                     </div>
-                    <p>{r.message}</p>
+                    <p>{readableText(r.message)}</p>
                     {!!r.affectedDates?.length && (
                       <p className="mt-1">
                         Даты:{" "}
@@ -1423,10 +1427,7 @@ export function HRPage({
                   reviewPreference.employeeId
                   ? "HR подтвердил ограничения при создании от имени сотрудника"
                   : "Сотрудник подтвердил понимание ограничений при подаче"}
-                :{" "}
-                <span className="font-semibold">
-                  {reviewPreference.acknowledgement.confirmedCodes.join(", ")}
-                </span>
+
               </div>
             )}
 
@@ -1502,7 +1503,7 @@ export function HRPage({
             <p className="text-xs text-slate-600 leading-relaxed">
               По регламенту ООО «Авистрейд» согласование исключения требует
               фиксации обоснованной производственной необходимости (не менее 10
-              символов). Данные фиксируются в неизменяемом журнале аудита.
+              символов). Данные фиксируются в истории решений.
             </p>
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -1647,14 +1648,11 @@ export function HRPage({
             className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4"
           >
             <h3 className="text-base font-bold text-[#34495E]">
-              Изменение корпоративного правила ({editingRule.code})
+              Изменение правила «{getCorporateRuleName(editingRule)}»
             </h3>
             <p className="text-xs text-slate-600 leading-relaxed">
-              Текущая версия:{" "}
-              <span className="font-semibold">v{editingRule.version}</span>.
-              После сохранения версия увеличится до{" "}
-              <span className="font-semibold">v{editingRule.version + 1}</span>,
-              а очередь и календарь будут мгновенно пересчитаны.
+              После сохранения система автоматически пересчитает календарь
+              и список пожеланий. Ранее принятые решения сохранятся.
             </p>
             <p className="text-sm text-slate-700">
               Изменение затрагивает: {ruleImpact.open} открытых пожеланий и{" "}
@@ -1779,7 +1777,7 @@ export function HRPage({
                 >
                   {state.employees.map((e) => (
                     <option key={e.id} value={e.id}>
-                      {e.name} ({e.positionCode})
+                      {e.name} — {e.positionName}
                     </option>
                   ))}
                 </select>
