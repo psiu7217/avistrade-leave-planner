@@ -21,6 +21,8 @@ import {
   isSummerDate,
   MONTH_NAMES_RU,
   WEEKDAYS_SHORT_RU,
+  pad2,
+  parseYMD,
 } from "../domain/dates";
 import {
   getEmployeeDateSummary,
@@ -58,6 +60,144 @@ function privateMessage(result: ValidationResult): string {
     return "Выбранный замещающий тоже отсутствует в этот период. Выберите другого коллегу или отправьте на рассмотрение HR.";
   return result.message;
 }
+
+const WEEKDAY_NAMES_RU = [
+  "воскресенье",
+  "понедельник",
+  "вторник",
+  "среда",
+  "четверг",
+  "пятница",
+  "суббота",
+];
+
+const MONTHS_GENITIVE_RU = [
+  "января",
+  "февраля",
+  "марта",
+  "апреля",
+  "мая",
+  "июня",
+  "июля",
+  "августа",
+  "сентября",
+  "октября",
+  "ноября",
+  "декабря",
+];
+
+function getPluralRu(
+  n: number,
+  one: string,
+  few: string,
+  many: string,
+): string {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod100 >= 11 && mod100 <= 19) return many;
+  if (mod10 === 1) return one;
+  if (mod10 >= 2 && mod10 <= 4) return few;
+  return many;
+}
+
+function formatRangeWithWeekdays(startDate: string, endDate: string): string {
+  if (!startDate || !endDate) return "";
+  const s = parseYMD(startDate);
+  const e = parseYMD(endDate);
+  if (!s || !e) return `${startDate} — ${endDate}`;
+
+  const sDate = new Date(s.year, s.month - 1, s.day);
+  const eDate = new Date(e.year, e.month - 1, e.day);
+  const sWd = WEEKDAY_NAMES_RU[sDate.getDay()];
+  const eWd = WEEKDAY_NAMES_RU[eDate.getDay()];
+
+  if (startDate === endDate) {
+    return `${sWd}, ${s.day} ${MONTHS_GENITIVE_RU[s.month - 1]} ${s.year}`;
+  }
+
+  const sYearStr = s.year !== e.year ? ` ${s.year}` : "";
+  return `${sWd}, ${s.day} ${MONTHS_GENITIVE_RU[s.month - 1]}${sYearStr} — ${eWd}, ${e.day} ${MONTHS_GENITIVE_RU[e.month - 1]} ${e.year}`;
+}
+
+interface MiniMonthViewProps {
+  year: number;
+  month: number;
+  startDate: string;
+  endDate: string;
+  onSelectDay?: (dateStr: string) => void;
+}
+
+function MiniMonthView({
+  year,
+  month,
+  startDate,
+  endDate,
+  onSelectDay,
+}: MiniMonthViewProps) {
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const firstDayWd = new Date(year, month - 1, 1).getDay();
+  const padCount = (firstDayWd + 6) % 7; // Russian weeks start Monday (0)
+
+  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+  const monthName = MONTH_NAMES_RU[month - 1];
+
+  return (
+    <div className="mini-month-card">
+      <div className="mini-month-title">
+        {monthName} {year}
+      </div>
+      <div className="mini-weekdays">
+        {WEEKDAYS_SHORT_RU.map((wd) => (
+          <span key={wd}>{wd}</span>
+        ))}
+      </div>
+      <div className="mini-days-grid">
+        {Array.from({ length: padCount }).map((_, i) => (
+          <span
+            key={`pad-${i}`}
+            className="mini-day-cell is-empty"
+            aria-hidden="true"
+          />
+        ))}
+        {days.map((day) => {
+          const dateStr = `${year}-${pad2(month)}-${pad2(day)}`;
+          const isSelected = Boolean(
+            startDate &&
+              endDate &&
+              dateStr >= startDate &&
+              dateStr <= endDate,
+          );
+          const isStart = dateStr === startDate;
+          const isEnd = dateStr === endDate;
+          const isHoliday = isOfficialHoliday(dateStr);
+          const dayWd = new Date(year, month - 1, day).getDay();
+          const isWeekend = dayWd === 0 || dayWd === 6;
+
+          let cellClass = "mini-day-cell";
+          if (isSelected) cellClass += " is-selected";
+          if (isStart) cellClass += " is-start";
+          if (isEnd) cellClass += " is-end";
+          if (isHoliday) cellClass += " is-holiday";
+          if (isWeekend) cellClass += " is-weekend";
+
+          return (
+            <button
+              type="button"
+              key={dateStr}
+              className={cellClass}
+              onClick={() => onSelectDay?.(dateStr)}
+              title={`${formatDateRu(dateStr, "medium")}${isHoliday ? " · Праздник" : ""}`}
+              aria-label={`${formatDateRu(dateStr, "medium")}${isSelected ? ", выбрано" : ""}`}
+            >
+              {day}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function EmployeePage() {
   const {
     state,
@@ -86,6 +226,34 @@ export function EmployeePage() {
   const [withdrawId, setWithdrawId] = useState<string | null>(null);
   const [error, setError] = useState("");
   useDialogFocus(!!withdrawId, () => setWithdrawId(null));
+  useDialogFocus(formOpen, () => {
+    setFormOpen(false);
+    resetForm();
+  });
+  const miniMonthsToDisplay = useMemo(() => {
+    if (!startDate) {
+      return [{ year: calendarYear, month: calendarMonth }];
+    }
+    const s = parseYMD(startDate);
+    if (!s) return [{ year: calendarYear, month: calendarMonth }];
+    const e = endDate ? parseYMD(endDate) : s;
+    if (!e || compareDateStr(startDate, endDate) > 0) {
+      return [{ year: s.year, month: s.month }];
+    }
+    const list: { year: number; month: number }[] = [];
+    let curY = s.year;
+    let curM = s.month;
+    while (curY < e.year || (curY === e.year && curM <= e.month)) {
+      list.push({ year: curY, month: curM });
+      curM++;
+      if (curM > 12) {
+        curM = 1;
+        curY++;
+      }
+      if (list.length >= 2) break;
+    }
+    return list;
+  }, [startDate, endDate, calendarYear, calendarMonth]);
   const months = getMonthsForHorizon(horizon);
   const weeks = getMonthCalendarGrid(
     calendarYear,
@@ -189,12 +357,8 @@ export function EmployeePage() {
     const month = Number(p.startDate.slice(5, 7));
     if (!months.includes(month)) setHorizon("ALL");
     setCalendarMonth(month);
-    document
-      .getElementById("leave-form")
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
   const selectDay = (date: string) => {
-    setFormOpen(true);
     setError("");
     if (!selectingEnd) {
       setStart(date);
@@ -204,8 +368,11 @@ export function EmployeePage() {
       if (date < startDate) {
         setEnd(startDate);
         setStart(date);
-      } else setEnd(date);
+      } else {
+        setEnd(date);
+      }
       setSelectingEnd(false);
+      setFormOpen(true);
     }
     setAcknowledged(false);
   };
@@ -315,7 +482,7 @@ export function EmployeePage() {
           <p>Нет данных рабочего года. Остаток уточните у HR.</p>
         )}
       </section>
-      <div className={formOpen ? "employee-grid with-form" : "employee-grid"}>
+      <div className="employee-grid">
         <section className="calendar-panel" aria-label="Календарь отпусков">
           <div className="calendar-toolbar">
             <h2>
@@ -354,9 +521,24 @@ export function EmployeePage() {
             </button>
           </div>
           <p className="calendar-instruction">
-            {selectingEnd
-              ? "Теперь выберите последний день отпуска. Можно перейти в другой месяц."
-              : "Нажмите первый и последний день, чтобы выбрать период."}
+            {selectingEnd ? (
+              <span>
+                Первый день выбран ({formatDateRu(startDate, "medium")}). Нажмите второй день в календаре (или этот же день для 1 дня отпуска), либо{" "}
+                <button
+                  type="button"
+                  className="text-button inline-link"
+                  onClick={() => {
+                    setSelectingEnd(false);
+                    setFormOpen(true);
+                  }}
+                >
+                  откройте форму заявки
+                </button>
+                .
+              </span>
+            ) : (
+              "Нажмите первый и последний день в календаре, чтобы выбрать даты, или нажмите «Запланировать отпуск»."
+            )}
           </p>
           <div className="month-grid">
             <div className="weekdays">
@@ -377,7 +559,8 @@ export function EmployeePage() {
                     summary.myStatus === "approved_exception";
                   const pending = summary.myStatus === "submitted";
                   const ownUnavailable = approved || pending;
-                  const isSelected = formOpen && selected.has(day.dateStr);
+                  const isSelected =
+                    (formOpen || selectingEnd) && selected.has(day.dateStr);
                   const status = approved
                     ? "approved"
                     : pending
@@ -458,17 +641,36 @@ export function EmployeePage() {
             ))}
           </div>
         </section>
-        {formOpen && (
+      </div>
+
+      {formOpen && (
+        <div
+          className="dialog-backdrop"
+          onClick={() => {
+            setFormOpen(false);
+            resetForm();
+          }}
+        >
           <section
             id="leave-form"
-            className="leave-form-panel"
+            className="leave-form-modal leave-form-panel"
+            role="dialog"
+            aria-modal="true"
             aria-labelledby="leave-form-title"
+            onClick={(e) => e.stopPropagation()}
           >
-            <div className="calendar-toolbar">
-              <h2 id="leave-form-title">
-                {editingId ? "Изменить пожелание" : "Новый отпуск"}
-              </h2>
+            <div className="calendar-toolbar modal-toolbar">
+              <div>
+                <h2 id="leave-form-title">
+                  {editingId ? "Изменить пожелание" : "Новый отпуск"}
+                </h2>
+                <p className="muted" style={{ margin: "4px 0 0" }}>
+                  Выберите даты и замещающего. HR рассмотрит ваше пожелание.
+                </p>
+              </div>
               <button
+                type="button"
+                className="modal-close-button"
                 aria-label="Закрыть форму"
                 onClick={() => {
                   setFormOpen(false);
@@ -478,9 +680,104 @@ export function EmployeePage() {
                 <X size={20} />
               </button>
             </div>
-            <p className="muted">
-              Выберите даты и замещающего. HR рассмотрит ваше пожелание.
-            </p>
+
+            {/* Visual Mini Calendar preview */}
+            <div
+              className="mini-calendar-section"
+              aria-label="Визуальный календарь выбранного периода"
+            >
+              <div className="mini-calendar-summary">
+                <CalendarDays size={20} className="mini-cal-icon" />
+                <div className="mini-cal-summary-text">
+                  <strong className="mini-cal-range-text">
+                    {startDate && endDate
+                      ? formatRangeWithWeekdays(startDate, endDate)
+                      : "Даты отпуска ещё не выбраны"}
+                  </strong>
+                  <span className="mini-cal-days-badge">
+                    {startDate && endDate && validation.absenceDays > 0 ? (
+                      <>
+                        {validation.absenceDays}{" "}
+                        {getPluralRu(
+                          validation.absenceDays,
+                          "календарный день",
+                          "календарных дня",
+                          "календарных дней",
+                        )}
+                        {leaveType === "labor" &&
+                          validation.leaveDays !== validation.absenceDays && (
+                            <>
+                              {" "}
+                              · {validation.leaveDays}{" "}
+                              {getPluralRu(
+                                validation.leaveDays,
+                                "день отпуска",
+                                "дня отпуска",
+                                "дней отпуска",
+                              )}
+                            </>
+                          )}
+                        {validation.holidayDates.length > 0 && (
+                          <>
+                            {" "}
+                            · {validation.holidayDates.length}{" "}
+                            {getPluralRu(
+                              validation.holidayDates.length,
+                              "праздничный день не расходует отпуск",
+                              "праздничных дня не расходуют отпуск",
+                              "праздничных дней не расходуют отпуск",
+                            )}
+                          </>
+                        )}
+                      </>
+                    ) : (
+                      "Укажите даты в календаре или в полях ввода ниже"
+                    )}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mini-months-container">
+                {miniMonthsToDisplay.map(({ year, month }) => (
+                  <MiniMonthView
+                    key={`${year}-${month}`}
+                    year={year}
+                    month={month}
+                    startDate={startDate}
+                    endDate={endDate}
+                    onSelectDay={(d) => {
+                      if (
+                        !startDate ||
+                        (startDate && endDate && startDate !== endDate)
+                      ) {
+                        setStart(d);
+                        setEnd(d);
+                      } else {
+                        if (d < startDate) {
+                          setEnd(startDate);
+                          setStart(d);
+                        } else {
+                          setEnd(d);
+                        }
+                      }
+                    }}
+                  />
+                ))}
+              </div>
+
+              <div className="mini-calendar-legend">
+                <span className="mini-legend-item">
+                  <span className="mini-swatch swatch-selected" /> Выбранный период
+                </span>
+                <span className="mini-legend-item">
+                  <span className="mini-swatch swatch-holiday" /> Праздничный день
+                </span>
+                <span className="mini-legend-hint">
+                  Даты можно корректировать в полях ввода ниже
+                </span>
+              </div>
+            </div>
+
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -532,8 +829,12 @@ export function EmployeePage() {
                     value={startDate}
                     required
                     onChange={(e) => {
-                      setStart(e.target.value);
+                      const val = e.target.value;
+                      setStart(val);
                       setSelectingEnd(false);
+                      if (endDate && val > endDate) {
+                        setEnd(val);
+                      }
                     }}
                   />
                 </label>
@@ -657,8 +958,8 @@ export function EmployeePage() {
               </button>
             </form>
           </section>
-        )}
-      </div>
+        </div>
+      )}
       <section className="my-leave-list">
         <div className="leave-list-toolbar">
           <div
