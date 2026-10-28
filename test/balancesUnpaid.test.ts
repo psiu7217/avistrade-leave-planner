@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { INITIAL_STATE } from "../src/data/seed";
+import { BASE_DEMO_STATE as INITIAL_STATE } from "../src/data/seed";
 import { AppState, Preference } from "../src/domain/types";
 import {
   getEmployeeBalances,

@@ -123,7 +123,10 @@ export function HRControlPanel({
           <span>Ждём ответа сотрудника</span>
           <strong>
             {needResponse.length}
-            <small> {missing} без дат · {returned} на корректировке</small>
+            <small>
+              {" "}
+              {missing} без дат · {returned} на корректировке
+            </small>
           </strong>
         </button>
         <button
@@ -132,7 +135,7 @@ export function HRControlPanel({
             setFilter("pending");
           }}
         >
-          <span>Пожеланий у HR</span>
+          <span>Трудовых пожеланий у HR</span>
           <strong>
             {pending}
             <small> на рассмотрении</small>
@@ -173,6 +176,8 @@ export function HRControlPanel({
                 «Нет дат» означает, что HR не получил актуального пожелания за
                 выбранный период. Черновики сотрудника здесь не раскрываются.
                 Наличие одной части ещё не означает завершённый годовой план.
+                Неоплачиваемые запросы находятся в общей очереди и не заменяют
+                даты трудового отпуска.
               </p>
             </div>
             <button
