@@ -2,9 +2,10 @@
  * Domain types for LeaveFlow v2.0 (Avistrade)
  */
 
-export type Role = 'employee' | 'hr';
+export type Role = "employee" | "hr";
 
-export type PositionCode = 'MPP' | 'SECTION_MGR' | 'NO' | 'RO' | 'ZAV' | 'ZTV' | 'ID' | 'HR' | 'OTHER';
+export type PositionCode =
+  "MPP" | "SECTION_MGR" | "NO" | "RO" | "ZAV" | "ZTV" | "ID" | "HR" | "OTHER";
 
 export interface Employee {
   id: string;
@@ -36,14 +37,10 @@ export interface IncompatibilityPair {
 }
 
 export type PreferenceStatus =
-  | 'draft'
-  | 'submitted'
-  | 'returned'
-  | 'approved'
-  | 'rejected'
-  | 'withdrawn';
+  "draft" | "submitted" | "returned" | "approved" | "rejected" | "withdrawn";
 
 export interface AcknowledgementSnapshot {
+  confirmedBy?: string;
   preferenceRevision: number;
   confirmedAt: string;
   confirmedCodes: string[];
@@ -62,6 +59,8 @@ export interface Preference {
   createdAt: string; // ISO
   updatedAt: string; // ISO
   submittedAt?: string; // ISO
+  submittedOn?: string; // Business date, independent of event timestamp
+  approvedRuleVersions?: Record<string, number>;
   acknowledgement?: AcknowledgementSnapshot;
   returnReason?: string;
   rejectionReason?: string;
@@ -69,8 +68,8 @@ export interface Preference {
   exceptionId?: string;
 }
 
-export type AbsenceType = 'labor' | 'unpaid' | 'other';
-export type AbsencePhase = 'used' | 'confirmed';
+export type AbsenceType = "labor" | "unpaid" | "other";
+export type AbsencePhase = "used" | "confirmed";
 
 export interface ExistingAbsence {
   id: string;
@@ -129,12 +128,12 @@ export interface AuditEvent {
 }
 
 export type ValidationResultKind =
-  | 'input_error'
-  | 'warning'
-  | 'corporate_conflict'
-  | 'legal_block'
-  | 'legal_review'
-  | 'config_review';
+  | "input_error"
+  | "warning"
+  | "corporate_conflict"
+  | "legal_block"
+  | "legal_review"
+  | "config_review";
 
 export interface ValidationResult {
   code: string;
@@ -170,4 +169,4 @@ export interface AppState {
   currentYear: number; // 2027
 }
 
-export type Horizon = 'H1' | 'H2' | 'ALL';
+export type Horizon = "H1" | "H2" | "ALL";

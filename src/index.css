@@ -1,24 +1,30 @@
 @import "tailwindcss";
 
 :root {
-  --brand-green: #00A882;
-  --brand-slate: #34495E;
-  --brand-gray: #ECECEC;
-  --surface: #FFFFFF;
-  --page: #F6F8F7;
-  --text: #34495E;
+  --brand-green: #00a882;
+  --brand-slate: #34495e;
+  --brand-gray: #ececec;
+  --surface: #ffffff;
+  --page: #f6f8f7;
+  --text: #34495e;
   --text-secondary: #526373;
-  --border: #D7DFDC;
-  --primary-action: #007A60;
-  --primary-action-hover: #00634E;
-  --selected-bg: #DCF5ED;
+  --border: #d7dfdc;
+  --primary-action: #007a60;
+  --primary-action-hover: #00634e;
+  --selected-bg: #dcf5ed;
   --success-text: #116149;
   --warning-text: #805300;
-  --warning-bg: #FFF3D6;
-  --danger-text: #A52A36;
-  --danger-bg: #FDEBED;
+  --warning-bg: #fff3d6;
+  --danger-text: #a52a36;
+  --danger-bg: #fdebed;
 
-  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    "Manrope",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
 }
 
 /* Custom subtle scrollbar styling for calendar and tables */
@@ -28,14 +34,739 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #F6F8F7;
+  background: #f6f8f7;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #D7DFDC;
+  background: #d7dfdc;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #A9B7B2;
+  background: #a9b7b2;
+}
+
+button,
+select,
+summary {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+.app-header {
+  background: #34495e;
+  color: white;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+.app-header-main {
+  max-width: 1280px;
+  padding: 16px 24px;
+  margin: auto;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.app-wordmark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: white;
+  font-size: 22px;
+  font-weight: 750;
+  text-decoration: none;
+}
+.app-wordmark svg {
+  color: #56dbba;
+}
+.app-wordmark small {
+  font-size: 12px;
+  margin-left: 8px;
+  font-weight: 500;
+  color: #dbe8e4;
+}
+.header-context {
+  font-size: 13px;
+  color: #dbe8e4;
+  margin-left: auto;
+}
+.app-header-note {
+  background: #293c4e;
+  font-size: 11px;
+  color: #dbe8e4;
+  padding: 7px 24px;
+  text-align: center;
+}
+.demo-controls {
+  position: relative;
+  font-size: 12px;
+}
+.demo-controls summary {
+  padding: 8px;
+  border: 1px solid #8296a7;
+  border-radius: 7px;
+}
+.demo-controls-popover {
+  position: absolute;
+  right: 0;
+  top: 42px;
+  width: 290px;
+  background: white;
+  color: #34495e;
+  border: 1px solid #d7dfdc;
+  border-radius: 10px;
+  padding: 18px;
+  box-shadow: 0 10px 25px #17243133;
+}
+.demo-controls-popover label {
+  display: block;
+  font-weight: 650;
+  margin-bottom: 14px;
+}
+.demo-controls-popover select {
+  display: block;
+  width: 100%;
+  border: 1px solid #a9b7b2;
+  border-radius: 6px;
+  margin-top: 7px;
+  padding: 9px;
+}
+.demo-controls-popover p {
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+.storage-warning {
+  background: #fff3d6;
+  color: #714900;
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  font-size: 13px;
+}
+:focus-visible {
+  outline: 3px solid #1674c5;
+  outline-offset: 3px;
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+.employee-workspace {
+  max-width: 1280px;
+  margin: auto;
+  padding: 32px 24px 48px;
+  font-size: 15px;
+}
+.employee-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.employee-heading h1 {
+  font-size: 30px;
+  font-weight: 750;
+  margin: 5px 0;
+  letter-spacing: -0.6px;
+}
+.employee-heading p {
+  color: #526373;
+}
+.eyebrow {
+  font-size: 12px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.primary-button,
+.secondary-button,
+.text-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 650;
+  font-size: 14px;
+  border-radius: 9px;
+  padding: 11px 16px;
+  min-height: 44px;
+  transition: background 0.15s;
+}
+.primary-button {
+  color: white;
+  background: #007a60;
+  border: 1px solid #007a60;
+}
+.primary-button:hover {
+  background: #00634e;
+}
+.secondary-button {
+  background: white;
+  border: 1px solid #a9b7b2;
+  color: #34495e;
+}
+.secondary-button:hover {
+  background: #f0f4f2;
+}
+.text-button {
+  color: #526373;
+  text-decoration: underline;
+}
+.primary-button:disabled,
+.secondary-button:disabled {
+  background: #ececec;
+  border-color: #d7dfdc;
+  color: #526373;
+}
+.personal-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr) 1.3fr;
+  background: white;
+  border: 1px solid #d7dfdc;
+  border-radius: 14px;
+  padding: 20px 24px;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.personal-summary div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.personal-summary span {
+  color: #526373;
+  font-size: 13px;
+}
+.personal-summary strong {
+  font-size: 28px;
+  line-height: 1.2;
+}
+.personal-summary small {
+  font-size: 13px;
+  font-weight: 500;
+}
+.personal-summary p {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #526373;
+  border-left: 1px solid #d7dfdc;
+  padding-left: 24px;
+}
+.employee-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  align-items: start;
+}
+.employee-grid.with-form {
+  grid-template-columns: minmax(0, 1fr) 380px;
+}
+.calendar-panel,
+.leave-form-panel,
+.my-leave-list {
+  background: white;
+  padding: 24px;
+  border: 1px solid #d7dfdc;
+  border-radius: 14px;
+}
+.leave-form-panel {
+  scroll-margin-top: 110px;
+}
+.calendar-toolbar,
+.leave-list-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.calendar-toolbar h2,
+.my-leave-list h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 700;
+}
+.calendar-toolbar select {
+  background: #f6f8f7;
+  border: 1px solid #a9b7b2;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+.month-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 24px 0 8px;
+}
+.month-navigation h3 {
+  font-size: 20px;
+  font-weight: 700;
+}
+.month-navigation button {
+  padding: 8px;
+  border: 1px solid #d7dfdc;
+  border-radius: 8px;
+}
+.month-navigation button:disabled {
+  opacity: 0.35;
+}
+.calendar-instruction {
+  font-size: 13px;
+  color: #526373;
+  margin-bottom: 16px;
+}
+.weekdays,
+.calendar-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+}
+.weekdays {
+  text-align: center;
+  color: #526373;
+  font-size: 12px;
+  font-weight: 650;
+  padding: 8px 0;
+}
+.calendar-week {
+  margin-bottom: 5px;
+}
+.day-cell {
+  min-height: 76px;
+  padding: 9px 7px;
+  border-radius: 8px;
+  border-width: 1px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 5px;
+}
+.day-cell:not(:disabled):hover {
+  box-shadow: inset 0 0 0 2px #34495e;
+}
+.day-number {
+  font-size: 16px;
+  font-weight: 700;
+}
+.day-status {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.day-free {
+  background: white;
+  border-color: #d7dfdc;
+  color: #34495e;
+}
+.day-free.weekend {
+  background: #f6f8f7;
+}
+.day-conflict {
+  background: repeating-linear-gradient(
+    135deg,
+    #fdebed,
+    #fdebed 6px,
+    #f8d4d9 6px,
+    #f8d4d9 9px
+  );
+  border-color: #b54450;
+  color: #8d2430;
+}
+.day-approved {
+  background: #007a60;
+  color: white;
+  border-color: #00634e;
+}
+.day-pending {
+  background: #fff3d6;
+  color: #714900;
+  border: 2px dashed #a66c00;
+}
+.day-selected {
+  background: #ddeeff;
+  border: 2px solid #1763a6;
+  color: #124e87;
+  box-shadow: inset 0 0 0 1px #1763a6;
+}
+.day-draft {
+  background: #ececec;
+  border: 1px dashed #637381;
+  color: #34495e;
+}
+.day-returned {
+  background: #fdebed;
+  border-color: #a52a36;
+  color: #a52a36;
+}
+.day-competition {
+  background: #eff6ff;
+  color: #244b74;
+  border-style: dotted;
+  border-color: #406b97;
+}
+.outside-month {
+  opacity: 0.28;
+  min-height: 76px;
+}
+.calendar-legend {
+  display: flex;
+  gap: 12px 18px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+  border-top: 1px solid #ececec;
+  padding-top: 16px;
+  font-size: 11px;
+  color: #526373;
+}
+.calendar-legend > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.legend-swatch {
+  display: inline-block;
+  width: 17px;
+  height: 17px;
+  border-radius: 4px;
+  border-width: 1px;
+  flex-shrink: 0;
+}
+.leave-form-panel .muted {
+  margin: 10px 0 20px;
+}
+.muted {
+  color: #526373;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.leave-form-panel form > label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+.leave-form-panel input:not([type="checkbox"]),
+.leave-form-panel select,
+.leave-form-panel textarea {
+  display: block;
+  width: 100%;
+  border: 1px solid #a9b7b2;
+  border-radius: 8px;
+  padding: 10px;
+  margin-top: 7px;
+  font-size: 14px;
+  font-weight: 450;
+  background: white;
+  min-width: 0;
+}
+.date-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 18px 0;
+}
+.date-inputs label {
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 0;
+}
+.form-day-count {
+  padding: 14px;
+  background: #f0f7f4;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  margin-bottom: 16px;
+}
+.form-day-count strong {
+  font-size: 18px;
+}
+.form-day-count span {
+  color: #526373;
+  line-height: 1.5;
+}
+.finding {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #fff3d6;
+  color: #714900;
+  margin-bottom: 10px;
+  line-height: 1.6;
+}
+.finding svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.finding-input_error,
+.finding-legal_block {
+  background: #fdebed;
+  color: #a52a36;
+}
+.finding-warning {
+  background: #eff6ff;
+  color: #244b74;
+}
+.leave-form-panel label.acknowledgement {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #fff3d6;
+  border: 1px solid #a66c00;
+  padding: 12px;
+  border-radius: 8px;
+  line-height: 1.6;
+  font-size: 12px;
+  color: #714900;
+}
+.acknowledgement input {
+  width: 18px;
+  height: 18px;
+  margin-top: 3px;
+  flex-shrink: 0;
+  accent-color: #007a60;
+}
+.inline-error {
+  background: #fdebed;
+  color: #a52a36;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.full-width {
+  width: 100%;
+  margin-top: 10px;
+}
+.my-leave-list {
+  margin-top: 24px;
+}
+.personal-tabs {
+  display: flex;
+  gap: 8px;
+}
+.personal-tabs button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-weight: 650;
+  color: #526373;
+}
+.personal-tabs button.active {
+  background: #34495e;
+  color: white;
+}
+.leave-cards {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.leave-card {
+  display: flex;
+  border: 1px solid #d7dfdc;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.leave-status-line {
+  width: 5px;
+  flex-shrink: 0;
+  background: #a9b7b2;
+}
+.leave-status-line.status-approved {
+  background: #007a60;
+}
+.leave-status-line.status-submitted {
+  background: #a66c00;
+}
+.leave-status-line.status-returned,
+.leave-status-line.status-rejected {
+  background: #a52a36;
+}
+.leave-card-body {
+  flex: 1;
+  padding: 18px;
+  min-width: 0;
+}
+.leave-card-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.leave-card-title h3 {
+  font-size: 17px;
+  font-weight: 700;
+}
+.leave-card-body > p {
+  font-size: 13px;
+  line-height: 1.6;
+  margin-top: 5px;
+}
+.status-badge {
+  font-size: 11px;
+  background: #ececec;
+  color: #34495e;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-weight: 650;
+}
+.status-badge.status-approved {
+  background: #dcf5ed;
+  color: #116149;
+}
+.status-badge.status-submitted {
+  background: #fff3d6;
+  color: #714900;
+}
+.status-badge.status-returned,
+.status-badge.status-rejected {
+  background: #fdebed;
+  color: #a52a36;
+}
+.leave-card-actions {
+  padding: 18px;
+  display: flex;
+  align-items: flex-start;
+}
+.response-message {
+  color: #a52a36;
+}
+.empty-state {
+  padding: 32px 0;
+  text-align: center;
+  color: #526373;
+}
+.request-history {
+  font-size: 12px;
+  margin-top: 12px;
+  color: #526373;
+}
+.request-history summary {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.request-history ol {
+  margin-top: 10px;
+  line-height: 1.8;
+}
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: #17243199;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 70;
+}
+.simple-dialog {
+  background: white;
+  padding: 28px;
+  border-radius: 14px;
+  max-width: 480px;
+}
+.simple-dialog h2 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.simple-dialog p {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #526373;
+}
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+@media (max-width: 1100px) {
+  .employee-grid.with-form {
+    grid-template-columns: minmax(0, 1fr) 340px;
+  }
+  .calendar-panel {
+    padding: 16px;
+  }
+  .day-status {
+    font-size: 9px;
+  }
+  .personal-summary {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .personal-summary p {
+    grid-column: 1/-1;
+    padding: 12px 0 0;
+    border-left: 0;
+    border-top: 1px solid #ececec;
+  }
+}
+@media (max-width: 850px) {
+  .employee-grid.with-form {
+    grid-template-columns: 1fr;
+  }
+  .leave-form-panel {
+    grid-row: 1;
+  }
+  .employee-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .employee-workspace {
+    padding: 24px 14px;
+  }
+}
+@media (max-width: 540px) {
+  .day-cell {
+    padding: 5px 3px;
+    min-height: 65px;
+  }
+  .day-status {
+    font-size: 8px;
+  }
+  .day-status svg {
+    display: none;
+  }
+  .personal-summary {
+    padding: 16px;
+    gap: 14px;
+  }
+  .personal-summary strong {
+    font-size: 23px;
+  }
+  .leave-card {
+    flex-wrap: wrap;
+  }
+  .leave-card-actions {
+    padding: 0 18px 14px;
+    margin-left: 5px;
+  }
+  .leave-list-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
